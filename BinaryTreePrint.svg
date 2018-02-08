@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created by printBinaryTree (Haskell, Josef Klotzner) -->
+<svg width="210mm" height="297mm" version="1.1"
+   xmlns="http://www.w3.org/2000/svg">
+   <text style="font-size:8px;fill:#000000;font-family:Sans" 
+   x="40" y="40">Created by Josef Klotzner (printBinaryTree, Haskell, svg)</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="200.0" y="588.0">-3</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="192.5" y="608.0">/</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="213.5" y="608.0">\</text>
+   <text style="font-size:10.0px;fill:#000000;font-family:Sans" x="190.0" y="620.0">x</text>
+   <text style="font-size:10.0px;fill:#000000;font-family:Sans" x="216.25" y="620.0">x</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="220.0" y="524.0">-2</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="205.0" y="564.0">/</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="247.0" y="564.0">\</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="252.5" y="588.0">x</text>
+   <text style="font-size:80.0px;fill:#000000;font-family:Sans" x="260.0" y="396.0">-1</text>
+   <text style="font-size:80.0px;fill:#000000;font-family:Sans" x="230.0" y="476.0">/</text>
+   <text style="font-size:80.0px;fill:#000000;font-family:Sans" x="314.0" y="476.0">\</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="325.0" y="524.0">x</text>
+   <text style="font-size:160.0px;fill:#000000;font-family:Sans" x="340.0" y="140.0">0</text>
+   <text style="font-size:160.0px;fill:#000000;font-family:Sans" x="280.0" y="300.0">/</text>
+   <text style="font-size:160.0px;fill:#000000;font-family:Sans" x="448.0" y="300.0">\</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="430.0" y="524.0">1</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="415.0" y="564.0">/</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="457.0" y="564.0">\</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="410.0" y="588.0">x</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="462.5" y="588.0">x</text>
+   <text style="font-size:80.0px;fill:#000000;font-family:Sans" x="470.0" y="396.0">2</text>
+   <text style="font-size:80.0px;fill:#000000;font-family:Sans" x="440.0" y="476.0">/</text>
+   <text style="font-size:80.0px;fill:#000000;font-family:Sans" x="524.0" y="476.0">\</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="515.0" y="588.0">3</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="507.5" y="608.0">/</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="528.5" y="608.0">\</text>
+   <text style="font-size:10.0px;fill:#000000;font-family:Sans" x="505.0" y="620.0">x</text>
+   <text style="font-size:10.0px;fill:#000000;font-family:Sans" x="531.25" y="620.0">x</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="535.0" y="524.0">4</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="520.0" y="564.0">/</text>
+   <text style="font-size:40.0px;fill:#000000;font-family:Sans" x="562.0" y="564.0">\</text>
+   <text style="font-size:20.0px;fill:#000000;font-family:Sans" x="567.5" y="588.0">x</text>
+</svg>
