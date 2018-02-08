@@ -1,0 +1,78 @@
+Equivalence Exercise
+1. lxy.xz
+    a) lxz.xz
+    b) lmn.mz
+    c) lz.(lx.xz)
+2. lxy.xxy
+    a) lmn.mnp
+    b) lx.(ly.xy)
+    c) la.(lb.aab)
+3. lxyz.zx
+    a) lx.(ly.(lz.z))
+    b) ltos.st
+    c) lmnp.mn
+
+1: b), 2: c), 3: b)
+
+Combinators
+l ... lambda  \
+1. lx.xxx
+2. lxy.zx
+3. lxyz.xy(zx)
+4. lxyz.xy(zxy)
+5. lxy.xy(zxy)
+
+2, 5 kein Combinator, weil freie Variablen involviert
+
+Normal form or diverge?
+1. lx.xxx
+2. (lz.zz)(ly.yy)
+3. (lx.xxx)z
+
+nur 2. divergiert - alpha äquivalent zu omega term
+    (lx.xx)(lx.xx)
+
+Beta reduce
+1. (labc.cba)zz(lwv.w)
+    (la.lb.lc.cba)(z)z(lw.lv.w)
+    (lb.lc.cbz)(z)(lw.lv.w)
+    (lc.czz)(lw.lv.w)
+    (lw.lv.w)(z)z
+    (lv.z)(z)
+    z
+    
+2. (lx.ly.xyy)(la.a)b
+    (ly.la.ayy)b
+    (la.abb)
+    bb
+3. (ly.y)(lx.xx)lz.zq)
+    (lz.zq)(lz.zq)
+    qq
+4. (lz.z)(lz.zz)(lz.zy)
+   hint: alpha equivalence
+    yy
+5. (lx.ly.xyy)(ly.y)y
+    (ly.(ly.y)yy)y
+    yy
+6. (la.aa)(lb.ba)c
+    (\a.a a) (\b.b a) c
+    [a:=\b.b a|
+    (\b.b a) (\b.b a) c
+    [alpha equivalence]
+    (\b.b a) (\d.d a) c
+    [b:=\d.d a]
+    (\d.d a) a c
+    [d:=a]
+    a a c
+
+7. (lxyz.xz(yz))(lx.w)(lx.a)
+    [x:=(lx.w)]
+    (lyz.(lx.w)z(yz))(lx.a)
+    [y:=(lx.a)]
+    lz.(lx.w)z((lx.a)z)
+?    [z:=(lx.w)]
+?    (lx.w)((lx.a)(lx.w))
+    
+    
+    
+    
