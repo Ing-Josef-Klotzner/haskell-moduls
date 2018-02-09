@@ -11,7 +11,7 @@ import Data.Char
 -- to see graphics file drag it to a browser or open it with a program being able to handle svg format
 
 -- Purpose: For everybody who wants to visualize his BinaryTree(s)
-
+data BinaryTree a = Leaf | Node (BinaryTree a) a (BinaryTree a) deriving (Eq, Ord, Show)
 --1. Write unfold for BinaryTree.
 unfold :: (a -> Maybe (a,b,a)) -> a -> BinaryTree b
 unfold f x = go (f x) where
