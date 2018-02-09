@@ -21,7 +21,7 @@ instance Show Puzzle where
        (intersperse ' ' $
         fmap renderPuzzleChar discovered)
         ++ " Guessed so far: " ++ guessed ++
-        "incorrect guesses: " ++ show(inc_c)
+        " Incorrect guesses: " ++ show(inc_c)
 
 freshPuzzle :: String -> Puzzle
 freshPuzzle s = Puzzle s (map (const Nothing) s) [] 0
