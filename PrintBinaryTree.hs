@@ -12,6 +12,7 @@ import Data.Char
 
 -- Purpose: For everybody who wants to visualize his BinaryTree(s)
 
+data BinaryTree a = Leaf | Node (BinaryTree a) a (BinaryTree a) deriving (Eq, Ord, Show)
 --1. Write unfold for BinaryTree.
 unfold :: (a -> Maybe (a,b,a)) -> a -> BinaryTree b
 unfold f x = go (f x) where
