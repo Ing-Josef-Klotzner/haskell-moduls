@@ -46,7 +46,7 @@ mkPerson name age
 -- Your job is to write the following function without modifying the code above.
 gimmePerson :: IO ()
 gimmePerson = do
-    putStrLn "Data entry for Person Collection"
+    putStrLn "\n Next data entry for Person Collection"
     putStr "Name: "
     name <- getLine
     putStr "Age: "
@@ -95,3 +95,5 @@ isLeft :: Either a b -> Bool
 isLeft (Left _) = True
 isLeft (Right _) = False 
 
+main = forever $ do
+    gimmePerson
