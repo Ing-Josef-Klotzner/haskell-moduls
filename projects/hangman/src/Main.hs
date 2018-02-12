@@ -18,10 +18,22 @@ data Puzzle = Puzzle String [Maybe Char] [Char] Int
 
 instance Show Puzzle where
     show (Puzzle _ discovered guessed inc_c) =
-       (intersperse ' ' $
+        "\n  " ++ (intersperse ' ' $
         fmap renderPuzzleChar discovered)
-        ++ " Guessed so far: " ++ guessed ++
-        " Incorrect guesses: " ++ show(inc_c)
+        ++ "\n" ++ m ++    -- m is simplified graphical hangman
+        "\n  Incorrect guesses: " ++ show(inc_c) ++
+        "\n  Guessed so far: " ++ guessed where
+            m = case inc_c of
+                0 -> m0
+                1 -> m1
+                2 -> m2
+                3 -> m3
+                4 -> m4
+                5 -> m5
+                6 -> m6
+                7 -> m7
+                8 -> m8
+                9 -> m9
 
 freshPuzzle :: String -> Puzzle
 freshPuzzle s = Puzzle s (map (const Nothing) s) [] 0
@@ -32,14 +44,15 @@ renderPuzzleChar (Just c) = c
 -- *Main> fmap renderPuzzleChar [Nothing, Just 'h', Nothing, Just 'e', Nothing]
 -- "_h_e_"
 
-type WordList = [String]
+--type WordList = [String]
+newtype WordList = WordList [String] deriving (Eq, Show)
 allWords :: IO WordList
 allWords = do
 --    h <- openFile "data/dict.txt" ReadMode
 --    hSetEncoding h latin1
 --    dict <- hGetContents h
     dict <- readFile "data/dict.txt"
-    return (lines dict)
+    return $ WordList (lines dict)
 
 minWordLength :: Int
 minWordLength = 5
@@ -48,15 +61,15 @@ maxWordLength = 9
 
 gameWords :: IO WordList
 gameWords = do
-    aw <- allWords
-    return (filter gameLength aw)
+    (WordList aw) <- allWords
+    return $ WordList (filter gameLength aw)
         where gameLength w =
                 let l = length (w :: String)
                 in      l >= minWordLength
-                     && l < maxWordLength
+                     && l <= maxWordLength
 
 randomWord :: WordList -> IO String
-randomWord wl = do
+randomWord (WordList wl) = do
     randomIndex <- randomRIO (0, (length wl - 1))
     --      fill this part in ^^^
     return $ wl !! randomIndex
@@ -127,27 +140,28 @@ alreadyGuessed (Puzzle _ _ g _) c = if elem c g then True else False
 
 handleGuess :: Puzzle -> Char -> IO Puzzle
 handleGuess puzzle guess = do
-    putStrLn $ "Your guess was: " ++ [guess]
+-- not needed to repeat input of guess
+--    putStrLn $ "Your guess was: " ++ [guess]
     case (charInWord puzzle guess
         , alreadyGuessed puzzle guess) of
         (_, True) -> do
-            putStrLn "You already guessed that\
+            putStrLn "\nYou already guessed that\
                         \ character, pick \
                         \ something else!"
             return puzzle
         (True, _) -> do
-            putStrLn "This character was in the\
+            putStrLn "\nThis character was in the\
                     \ word, filling in the word\
                     \ accordingly"
             return (fillInCharacter puzzle guess False)
         (False, _) -> do
-            putStrLn "This character wasn't in\
+            putStrLn "\nThis character wasn't in\
                     \ the word, try another."
             return (fillInCharacter puzzle guess True)
 
 gameOver :: Puzzle -> IO ()
 gameOver (Puzzle wordToGuess _ guessed inc_c) =
-    if inc_c > 7 then
+    if inc_c > 8 then
         do putStrLn "You lose!"
            putStrLn $ "The word was: " ++ wordToGuess
            exitSuccess
@@ -160,19 +174,84 @@ gameWin (Puzzle _ filledInSoFar _ _) =
            exitSuccess
     else return ()
 
-runGame :: Puzzle -> IO ()
-runGame puzzle = forever $ do
-    gameOver puzzle
-    gameWin puzzle
-    putStrLn $ "Current puzzle is: " ++ show puzzle
-    putStr "Guess a letter: "
+-- a getLine function for single characters - avoiding return of more than one character
+getLine' :: IO Char
+getLine' = do
     guess <- getLine
     case guess of
-        [c] -> handleGuess puzzle c >>= runGame
-        _   -> putStrLn "Your guess must be a single character"
+        [c] -> return c
+        _   -> do   putStr $ "Your guess must be a single character\n" ++
+                               "Guess a letter: "
+                    getLine'
+
+
+runGame :: Puzzle -> IO ()
+runGame puzzle = forever $ do
+    putStrLn $ "  Current puzzle is: " ++ show puzzle
+    gameOver puzzle
+    gameWin puzzle
+    putStr "Guess a letter: "
+    guess <- getLine'
+    handleGuess puzzle guess >>= runGame
 
 main :: IO ()
 main = do
     word <- randomWord'
     let puzzle = freshPuzzle (fmap toLower word)
     runGame puzzle
+
+m0 = ""
+
+m1 = "\
+\           \n\
+\    |      \n\
+\    |      \n\
+\    |      \n"
+
+m2 = "\
+\     ___   \n\
+\    |      \n\
+\    |      \n\
+\    |      \n"
+
+m3 = "\
+\     ___   \n\
+\    |/     \n\
+\    |      \n\
+\    |      \n"
+
+m4 = "\
+\     ___   \n\
+\    |/  Ò  \n\
+\    |      \n\
+\    |      \n"
+
+m5 = "\
+\     ___   \n\
+\    |/  Ò  \n\
+\    |  {.} \n\
+\    |      \n"
+
+m6 = "\
+\     ___   \n\
+\    |/  Ò  \n\
+\    | /{.} \n\
+\    |      \n"
+
+m7 = "\
+\     ___   \n\
+\    |/  Ò  \n\
+\    | /{.}\\\n\
+\    |      \n"
+
+m8 = "\
+\     ___   \n\
+\    |/  Ò  \n\
+\    | /{.}\\\n\
+\    |  /   \n"
+
+m9 = "\
+\     ___   \n\
+\    |/  Ò  \n\
+\    | /{.}\\\n\
+\    |  / \\ \n"
