@@ -60,7 +60,7 @@ gimmePerson = do
     putStrLn $ "way of presentation haskell book asked for: Either 'Yay! Person Name Age'\n" ++
              "                                              or   'Error: KindOfError'"
     putStrLn $ content person1
-
+    putStrLn "\nPromotion by my own: checkout also involved function palindrome!"
 --Since IO () is about the least informative type imaginable,
 --we’ll tell what it should do.
 --a) It should prompt the user for a name and age input.
