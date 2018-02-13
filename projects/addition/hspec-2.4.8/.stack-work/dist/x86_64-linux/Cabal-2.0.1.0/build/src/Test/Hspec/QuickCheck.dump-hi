@@ -1,0 +1,207 @@
+
+==================== FINAL INTERFACE ====================
+2018-02-12 23:17:45.828972 UTC
+
+interface hspec-2.4.8-AD8oV31xXDiFndrFhOZAG:Test.Hspec.QuickCheck 8022
+  interface hash: 5979823df38af8bad8e85b914d583fa1
+  ABI hash: 58f9c62e926ccb2233d2cc30dd962f46
+  export-list hash: 894a1c3c33d69430181849928df5c7da
+  orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
+  flag hash: 7b829f73d7f1faddd05b71ecf0a4a3a7
+  sig of: Nothing
+  used TH splices: False
+  where
+exports:
+  Test.Hspec.QuickCheck.prop
+  Test.Hspec.Core.QuickCheck.modifyMaxDiscardRatio
+  Test.Hspec.Core.QuickCheck.modifyMaxSize
+  Test.Hspec.Core.QuickCheck.modifyMaxSuccess
+module dependencies: Test.Hspec Test.Hspec.Runner
+package dependencies: HUnit-1.6.0.0 QuickCheck-2.10.1
+                      ansi-terminal-0.7.1.1 array-0.5.2.0 base-4.10.1.0 call-stack-0.1.0
+                      colour-2.3.4 containers-0.5.10.2 deepseq-1.4.3.0 directory-1.3.0.2
+                      filepath-1.4.1.2 ghc-boot-th-8.2.2 ghc-prim-0.5.1.1
+                      hspec-core-2.4.8 hspec-expectations-0.8.2 integer-gmp-1.0.1.0
+                      pretty-1.1.3.3 primitive-0.6.3.0 quickcheck-io-0.2.0 random-1.1
+                      setenv-0.1.1.3 stm-2.4.5.0 template-haskell-2.12.0.0 tf-random-0.5
+                      time-1.8.0.2 transformers-0.5.2.0 unix-2.7.2.2
+orphans: colour-2.3.4:Data.Colour
+         quickcheck-io-0.2.0:Test.QuickCheck.IO
+         transformers-0.5.2.0:Control.Monad.Trans.Error
+         time-1.8.0.2:Data.Time.Format.Parse
+         time-1.8.0.2:Data.Time.LocalTime.Internal.ZonedTime
+         time-1.8.0.2:Data.Time.LocalTime.Internal.LocalTime
+         time-1.8.0.2:Data.Time.Calendar.Gregorian
+         stm-2.4.5.0:Control.Monad.STM base-4.10.1.0:GHC.Float
+         base-4.10.1.0:GHC.Base
+family instance modules: base-4.10.1.0:Control.Applicative
+                         base-4.10.1.0:Data.Complex base-4.10.1.0:Data.Either
+                         base-4.10.1.0:Data.Functor.Compose base-4.10.1.0:Data.Functor.Const
+                         base-4.10.1.0:Data.Functor.Identity
+                         base-4.10.1.0:Data.Functor.Product base-4.10.1.0:Data.Functor.Sum
+                         base-4.10.1.0:Data.List.NonEmpty base-4.10.1.0:Data.Monoid
+                         base-4.10.1.0:Data.Semigroup base-4.10.1.0:Data.Type.Equality
+                         base-4.10.1.0:Data.Version base-4.10.1.0:Data.Void
+                         base-4.10.1.0:GHC.Exts base-4.10.1.0:GHC.Generics
+                         base-4.10.1.0:GHC.IO.Exception base-4.10.1.0:GHC.TypeLits
+                         base-4.10.1.0:GHC.TypeNats containers-0.5.10.2:Data.IntMap.Internal
+                         containers-0.5.10.2:Data.IntSet.Internal
+                         containers-0.5.10.2:Data.Map.Internal
+                         containers-0.5.10.2:Data.Sequence.Internal
+                         containers-0.5.10.2:Data.Set.Internal
+                         ghc-boot-th-8.2.2:GHC.ForeignSrcLang.Type
+                         ghc-boot-th-8.2.2:GHC.LanguageExtensions.Type
+                         hspec-core-2.4.8:Test.Hspec.Core.Example
+                         pretty-1.1.3.3:Text.PrettyPrint.Annotated.HughesPJ
+                         pretty-1.1.3.3:Text.PrettyPrint.HughesPJ
+                         primitive-0.6.3.0:Control.Monad.Primitive
+                         primitive-0.6.3.0:Data.Primitive.ByteArray
+                         template-haskell-2.12.0.0:Language.Haskell.TH.Syntax
+import  -/  QuickCheck-2.10.1:Test.QuickCheck 671fdf5a514fddf30d03d7a2c93ba6cf
+import  -/  QuickCheck-2.10.1:Test.QuickCheck.Property 266227be0704baf88d190e5306a03ef8
+import  -/  base-4.10.1.0:GHC.Base 782fd99b5e36f3698a26179a49afca64
+import  -/  base-4.10.1.0:GHC.Stack.Types e91b5819d74f711c2d3b11c26190314d
+import  -/  base-4.10.1.0:Prelude 31945b7d0084063347fc52506d3a4020
+import  -/  Test.Hspec 9dc7699b294ec002a3e3cbdcf26f3c8c
+  exports: 424c3d5b3b4c4d495aba657ac3091ac8
+import  -/  hspec-core-2.4.8:Test.Hspec.Core.QuickCheck f56074dd808de20f31b5bd5cd09053dc
+import  -/  hspec-core-2.4.8:Test.Hspec.Core.Spec 1ff1f1350ee0955de60346298ce321a7
+import  -/  hspec-core-2.4.8:Test.Hspec.Core.Spec.Monad e92f54848c64cf25cef2cffb1d44bd57
+d3e8aa2f9fc86992bfec7d6066ce55e3
+  $trModule :: GHC.Types.Module
+  {- HasNoCafRefs, Strictness: m,
+     Unfolding: (GHC.Types.Module
+                   Test.Hspec.QuickCheck.$trModule3
+                   Test.Hspec.QuickCheck.$trModule1) -}
+c34ae64353e39daaccbb4525bff275a9
+  $trModule1 :: GHC.Types.TrName
+  {- HasNoCafRefs, Strictness: m1,
+     Unfolding: (GHC.Types.TrNameS Test.Hspec.QuickCheck.$trModule2) -}
+ccf6d41cace349856c1559cc5713a56f
+  $trModule2 :: GHC.Prim.Addr#
+  {- HasNoCafRefs, Unfolding: ("Test.Hspec.QuickCheck"#) -}
+adb77c52521695a7174d83a0f062f150
+  $trModule3 :: GHC.Types.TrName
+  {- HasNoCafRefs, Strictness: m1,
+     Unfolding: (GHC.Types.TrNameS Test.Hspec.QuickCheck.$trModule4) -}
+f55ecbc9159cf46fd27c77e56f609cca
+  $trModule4 :: GHC.Prim.Addr#
+  {- HasNoCafRefs,
+     Unfolding: ("hspec-2.4.8-AD8oV31xXDiFndrFhOZAG"#) -}
+5c9fbe06186b7ad8eb21c7a1559f99cb
+  prop ::
+    (GHC.Stack.Types.HasCallStack,
+     Test.QuickCheck.Property.Testable prop) =>
+    GHC.Base.String -> prop -> Test.Hspec.Core.Spec.Monad.Spec
+  {- Arity: 3, Strictness: <L,1*U><L,C(U)><L,U>,
+     Unfolding: (\ @ prop11
+                   ($dIP :: GHC.Stack.Types.HasCallStack)
+                   ($dTestable :: Test.QuickCheck.Property.Testable prop11)
+                   (eta :: GHC.Base.String) ->
+                 let {
+                   f :: Test.QuickCheck.Property.Property
+                        -> Test.Hspec.Core.Spec.Monad.SpecWith
+                             (Test.Hspec.Core.Example.Arg Test.QuickCheck.Property.Property)
+                   = Test.Hspec.Core.Spec.it
+                       @ Test.QuickCheck.Property.Property
+                       (case $dIP
+                               `cast`
+                             (GHC.Classes.N:IP[0]
+                                  <"callStack">_N <GHC.Stack.Types.CallStack>_N) of wild1 {
+                          DEFAULT
+                          -> (GHC.Stack.Types.PushCallStack
+                                Test.Hspec.QuickCheck.prop9
+                                Test.Hspec.QuickCheck.prop1
+                                wild1)
+                               `cast`
+                             (Sym (GHC.Classes.N:IP[0]
+                                       <"callStack">_N <GHC.Stack.Types.CallStack>_N))
+                          GHC.Stack.Types.FreezeCallStack ds1
+                          -> wild1
+                               `cast`
+                             (Sym (GHC.Classes.N:IP[0]
+                                       <"callStack">_N <GHC.Stack.Types.CallStack>_N)) })
+                       Test.Hspec.Core.Example.$fExampleProperty1
+                         `cast`
+                       (Trans
+                            (<Test.QuickCheck.Property.Property>_R
+                             ->_R <Test.Hspec.Core.Example.Params>_R
+                             ->_R <Test.Hspec.Core.Example.ActionWith
+                                     (Test.Hspec.Core.Example.Arg
+                                        (() -> Test.QuickCheck.Property.Property))
+                                   -> GHC.Types.IO ()>_R
+                             ->_R <Test.Hspec.Core.Example.ProgressCallback>_R
+                             ->_R Sym (GHC.Types.N:IO[0] <Test.Hspec.Core.Example.Result>_R))
+                            (Trans
+                                 (<Test.QuickCheck.Property.Property>_R
+                                  ->_R <Test.Hspec.Core.Example.Params>_R
+                                  ->_R ((Trans
+                                             (Sub (Test.Hspec.Core.Example.D:R:Arg(->)[0] <()>_N))
+                                             (Sub (Sym (Test.Hspec.Core.Example.D:R:ArgProperty[0])))
+                                         ->_R <GHC.Types.IO ()>_R)
+                                        ->_R <GHC.Types.IO ()>_R)
+                                  ->_R <Test.Hspec.Core.Example.ProgressCallback
+                                        -> GHC.Types.IO Test.Hspec.Core.Example.Result>_R)
+                                 (Sym (Test.Hspec.Core.Example.N:Example[0]
+                                           <Test.QuickCheck.Property.Property>_N))))
+                       eta
+                 } in
+                 (\ (x :: prop11) ->
+                  f ($dTestable
+                       `cast`
+                     (Test.QuickCheck.Property.N:Testable[0] <prop11>_N)
+                       x))
+                   `cast`
+                 (<prop11>_R
+                  ->_R (Test.Hspec.Core.Spec.Monad.SpecM
+                          (Test.Hspec.Core.Example.D:R:ArgProperty[0]) <()>_N)_R)) -}
+59d6850b8e7220f69f3ac692c8c133a8
+  prop1 :: GHC.Stack.Types.SrcLoc
+  {- Strictness: m,
+     Unfolding: (GHC.Stack.Types.SrcLoc
+                   Test.Hspec.QuickCheck.prop8
+                   Test.Hspec.QuickCheck.prop7
+                   Test.Hspec.QuickCheck.prop5
+                   Test.Hspec.QuickCheck.prop4
+                   Test.Hspec.QuickCheck.prop3
+                   Test.Hspec.QuickCheck.prop4
+                   Test.Hspec.QuickCheck.prop2) -}
+87cb6ce961ffbc148e3047c35b50cead
+  prop10 :: GHC.Prim.Addr#
+  {- HasNoCafRefs, Unfolding: ("it"#) -}
+fb39a6d14ea75f9bddb6c7485acccb9f
+  prop2 :: GHC.Types.Int
+  {- HasNoCafRefs, Strictness: m, Unfolding: (GHC.Types.I# 14#) -}
+5c696bfba1a7970c6833ea43c6787436
+  prop3 :: GHC.Types.Int
+  {- HasNoCafRefs, Strictness: m, Unfolding: (GHC.Types.I# 10#) -}
+ad6fd90ff33387d57ba56e83c06d1a10
+  prop4 :: GHC.Types.Int
+  {- HasNoCafRefs, Strictness: m, Unfolding: (GHC.Types.I# 26#) -}
+a9e37cb74000d67920a7b76d08eb524f
+  prop5 :: [GHC.Types.Char]
+  {- Unfolding: (GHC.CString.unpackCString#
+                   Test.Hspec.QuickCheck.prop6) -}
+9996f15b0819348d81087745214df67c
+  prop6 :: GHC.Prim.Addr#
+  {- HasNoCafRefs, Unfolding: ("src/Test/Hspec/QuickCheck.hs"#) -}
+0886306277e8630e31a8026862b2f15d
+  prop7 :: [GHC.Types.Char]
+  {- Unfolding: (GHC.CString.unpackCString#
+                   Test.Hspec.QuickCheck.$trModule2) -}
+cad4fb5dda714d2f63a4ffb41989f24d
+  prop8 :: [GHC.Types.Char]
+  {- Unfolding: (GHC.CString.unpackCString#
+                   Test.Hspec.QuickCheck.$trModule4) -}
+b6b95fc67390ec48c687e68206e213b5
+  prop9 :: [GHC.Types.Char]
+  {- Unfolding: (GHC.CString.unpackCString#
+                   Test.Hspec.QuickCheck.prop10) -}
+vectorised variables:
+vectorised tycons:
+vectorised reused tycons:
+parallel variables:
+parallel tycons:
+trusted: none
+require own pkg trusted: False
+

@@ -1,0 +1,134 @@
+
+==================== FINAL INTERFACE ====================
+2018-02-12 23:17:45.622745 UTC
+
+interface hspec-2.4.8-AD8oV31xXDiFndrFhOZAG:Test.Hspec.HUnit 8022
+  interface hash: 7dd20ee2c719978acf4248538ae3d610
+  ABI hash: 1494bc4144206f77f792294745e6b3d5
+  export-list hash: 75d065bf50bb7f22e4df2dd78d7e1022
+  orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
+  flag hash: 8fae62dad04a5a337165257173180599
+  sig of: Nothing
+  used TH splices: False
+  where
+exports:
+  Test.Hspec.HUnit.fromHUnitTest
+module dependencies:
+package dependencies: HUnit-1.6.0.0 QuickCheck-2.10.1 array-0.5.2.0
+                      base-4.10.1.0 call-stack-0.1.0 containers-0.5.10.2 deepseq-1.4.3.0
+                      ghc-boot-th-8.2.2 ghc-prim-0.5.1.1 hspec-core-2.4.8
+                      hspec-expectations-0.8.2 integer-gmp-1.0.1.0 pretty-1.1.3.3
+                      primitive-0.6.3.0 quickcheck-io-0.2.0 random-1.1 stm-2.4.5.0
+                      template-haskell-2.12.0.0 tf-random-0.5 time-1.8.0.2
+                      transformers-0.5.2.0
+orphans: quickcheck-io-0.2.0:Test.QuickCheck.IO
+         transformers-0.5.2.0:Control.Monad.Trans.Error
+         time-1.8.0.2:Data.Time.Format.Parse
+         time-1.8.0.2:Data.Time.LocalTime.Internal.ZonedTime
+         time-1.8.0.2:Data.Time.LocalTime.Internal.LocalTime
+         time-1.8.0.2:Data.Time.Calendar.Gregorian
+         stm-2.4.5.0:Control.Monad.STM base-4.10.1.0:GHC.Float
+         base-4.10.1.0:GHC.Base
+family instance modules: base-4.10.1.0:Control.Applicative
+                         base-4.10.1.0:Data.Complex base-4.10.1.0:Data.Either
+                         base-4.10.1.0:Data.Functor.Compose base-4.10.1.0:Data.Functor.Const
+                         base-4.10.1.0:Data.Functor.Identity
+                         base-4.10.1.0:Data.Functor.Product base-4.10.1.0:Data.Functor.Sum
+                         base-4.10.1.0:Data.List.NonEmpty base-4.10.1.0:Data.Monoid
+                         base-4.10.1.0:Data.Semigroup base-4.10.1.0:Data.Type.Equality
+                         base-4.10.1.0:Data.Version base-4.10.1.0:Data.Void
+                         base-4.10.1.0:GHC.Exts base-4.10.1.0:GHC.Generics
+                         base-4.10.1.0:GHC.IO.Exception base-4.10.1.0:GHC.TypeLits
+                         base-4.10.1.0:GHC.TypeNats containers-0.5.10.2:Data.IntMap.Internal
+                         containers-0.5.10.2:Data.IntSet.Internal
+                         containers-0.5.10.2:Data.Map.Internal
+                         containers-0.5.10.2:Data.Sequence.Internal
+                         containers-0.5.10.2:Data.Set.Internal
+                         ghc-boot-th-8.2.2:GHC.ForeignSrcLang.Type
+                         ghc-boot-th-8.2.2:GHC.LanguageExtensions.Type
+                         hspec-core-2.4.8:Test.Hspec.Core.Example
+                         pretty-1.1.3.3:Text.PrettyPrint.Annotated.HughesPJ
+                         pretty-1.1.3.3:Text.PrettyPrint.HughesPJ
+                         primitive-0.6.3.0:Control.Monad.Primitive
+                         primitive-0.6.3.0:Data.Primitive.ByteArray
+                         template-haskell-2.12.0.0:Language.Haskell.TH.Syntax
+import  -/  HUnit-1.6.0.0:Test.HUnit 80cbcb3315181d19695a82478844cc0c
+import  -/  HUnit-1.6.0.0:Test.HUnit.Base e6af8f3ac825f8be9192c09dd680a677
+import  -/  base-4.10.1.0:Data.Foldable 9ed87455d68e87ff2b5b8725eae9897e
+import  -/  base-4.10.1.0:Prelude 31945b7d0084063347fc52506d3a4020
+import  -/  hspec-core-2.4.8:Test.Hspec.Core.Spec 1ff1f1350ee0955de60346298ce321a7
+import  -/  hspec-core-2.4.8:Test.Hspec.Core.Spec.Monad e92f54848c64cf25cef2cffb1d44bd57
+91bf21aaba3cc8abf58b27175c44452d
+  $trModule :: GHC.Types.Module
+  {- HasNoCafRefs, Strictness: m,
+     Unfolding: (GHC.Types.Module
+                   Test.Hspec.HUnit.$trModule3
+                   Test.Hspec.HUnit.$trModule1) -}
+c1294d0e3bb55e32bedb663bb57564ef
+  $trModule1 :: GHC.Types.TrName
+  {- HasNoCafRefs, Strictness: m1,
+     Unfolding: (GHC.Types.TrNameS Test.Hspec.HUnit.$trModule2) -}
+ec6f63e054b0ef5249c4085ba841e8b8
+  $trModule2 :: GHC.Prim.Addr#
+  {- HasNoCafRefs, Unfolding: ("Test.Hspec.HUnit"#) -}
+a20c09c22f41ad1ff5dac805c7d11a71
+  $trModule3 :: GHC.Types.TrName
+  {- HasNoCafRefs, Strictness: m1,
+     Unfolding: (GHC.Types.TrNameS Test.Hspec.HUnit.$trModule4) -}
+8e919c2445dbcfd72f0179ced14f156e
+  $trModule4 :: GHC.Prim.Addr#
+  {- HasNoCafRefs,
+     Unfolding: ("hspec-2.4.8-AD8oV31xXDiFndrFhOZAG"#) -}
+ee90ea9f95950f413457c119d7472fd9
+  fromHUnitTest ::
+    Test.HUnit.Base.Test -> Test.Hspec.Core.Spec.Monad.Spec
+  {- Arity: 2, Strictness: <S,1*U><S,U>,
+     Unfolding: InlineRule (0, True, True)
+                Test.Hspec.HUnit.fromHUnitTest1
+                  `cast`
+                (<Test.HUnit.Base.Test>_R
+                 ->_R Trans
+                          (Sym (GHC.Types.N:IO[0]
+                                    <((), [Test.Hspec.Core.Tree.SpecTree ()])>_R))
+                          (Trans
+                               (Sym (Control.Monad.Trans.Writer.Lazy.N:WriterT[0]
+                                         <[Test.Hspec.Core.Tree.SpecTree ()]>_N
+                                         <GHC.Types.IO>_R
+                                         <()>_N))
+                               (Sym (Test.Hspec.Core.Spec.Monad.N:SpecM[0] <()>_N) <()>_N))) -}
+5e7f818ca4a4444f369d73e33062dce5
+  fromHUnitTest1 ::
+    Test.HUnit.Base.Test
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld,
+          ((), [Test.Hspec.Core.Tree.SpecTree ()]) #)
+  {- Arity: 2, Strictness: <S,1*U><S,U>,
+     Unfolding: (\ (t :: Test.HUnit.Base.Test)
+                   (eta :: GHC.Prim.State# GHC.Prim.RealWorld) ->
+                 case t of wild1 {
+                   DEFAULT -> Test.Hspec.HUnit.fromHUnitTest3 wild1 eta
+                   Test.HUnit.Base.TestList xs
+                   -> Test.Hspec.HUnit.fromHUnitTest2 xs eta }) -}
+c2bc8c48dd6d057de61449b0c3dd26a0
+  fromHUnitTest2 ::
+    [Test.HUnit.Base.Test]
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld,
+          ((), [Test.Hspec.Core.Tree.SpecTree ()]) #)
+  {- Arity: 2, Strictness: <S,1*U><S,U> -}
+c63d500e39719e0aca2cd7c1cc9454f0
+  fromHUnitTest3 ::
+    Test.HUnit.Base.Test
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld,
+          ((), [Test.Hspec.Core.Tree.SpecTree ()]) #)
+  {- Arity: 2, Strictness: <S,1*U><S,U> -}
+vectorised variables:
+vectorised tycons:
+vectorised reused tycons:
+parallel variables:
+parallel tycons:
+Warn all {-# DEPRECATED "use \"Test.Hspec.Contrib.HUnit\" from package @hspec-contrib@ instead" #-}
+trusted: none
+require own pkg trusted: False
+
