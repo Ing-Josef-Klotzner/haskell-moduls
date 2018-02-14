@@ -1,6 +1,6 @@
 module MulIntEthiopic where
 import Test.Hspec
-import Data.Bits (shift, Bits(..))
+import Data.Bits (shift)
 
 mulIntEthiopic :: Integer -> Integer -> Integer
 mulIntEthiopic x y
@@ -15,10 +15,10 @@ mulIntEthiopic'' a b =
     map snd $
     filter (odd . fst) $
     zip (takeWhile (>= 1) $ iterate halve a) (iterate double b) where
-        halve :: (Integral a, Bits a) => a -> a
+        halve :: Integer -> Integer
         halve i = shift i (-1)
          
-        double :: (Integral a, Bits a) => a -> a
+        double :: Integer -> Integer
         double i = shift i 1
 
 
@@ -39,6 +39,7 @@ main = hspec $ do
         it "-100 multiplied by 3 is -300" $ do
             mulIntEthiopic (-100) 3 `shouldBe` (-300)
     describe "Multiplication" $ do
-        it (show m1 ++ "\nmultiplied by\n" ++ show m1 ++"\nis\n" ++ show product_) $ do
-            mulIntEthiopic m1 m2 `shouldBe` product_
+        it (show m1 ++ " ^ 10" ++ "\nmultiplied by\n" ++ show m1 ++ 
+                " ^ 10" ++ "\nis\n" ++ show product_ ++ " ^ 10") $ do
+            mulIntEthiopic (m1 ^ 10) (m2 ^ 10) `shouldBe` (product_ ^ 10)
 

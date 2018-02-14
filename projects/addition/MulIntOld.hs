@@ -52,10 +52,11 @@ product_ = 734891971525875259509112393935049162198943316427668060049630140893808
 
 main :: IO ()
 main = hspec $ do
-    describe "Multiplication" $ do
+    describe "Multiplication   ... this will take about a minute!" $ do
         it "-100 multiplied by 3 is -300" $ do
             mulInt (-100) 3 `shouldBe` (-300)
     describe "Multiplication" $ do
-        it (show m1 ++ "\nmultiplied by\n" ++ show m1 ++"\nis\n" ++ show product_) $ do
-            mulInt m1 m2 `shouldBe` product_
+        it (show m1 ++ " ^ 10" ++ "\nmultiplied by\n" ++ show m1 ++ 
+                " ^ 10" ++ "\nis\n" ++ show product_ ++ " ^ 10") $ do
+            mulInt (m1 ^ 10) (m2 ^ 10) `shouldBe` (product_ ^ 10)
 

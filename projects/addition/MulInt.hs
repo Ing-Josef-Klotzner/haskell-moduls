@@ -42,7 +42,7 @@ mulInt'' x y = go x y 0
 
 -- multiply Integer x by 10
 mulIntx10 :: Integer -> Integer
-mulIntx10 x = x + x + shift x 3
+mulIntx10 x = (shift x 1) + shift x 3
 
 --lastIntDigit :: Integer -> Integer
 --lastIntDigit i = fromIntegral $ digitToInt $ last $ show i
@@ -72,6 +72,7 @@ main = hspec $ do
         it "-100 multiplied by 3 is -300" $ do
             mulInt (-100) 3 `shouldBe` (-300)
     describe "Multiplication" $ do
-        it (show m1 ++ "\nmultiplied by\n" ++ show m1 ++"\nis\n" ++ show product_) $ do
+        it (show m1 ++ " ^ 10" ++ "\nmultiplied by\n" ++ show m1 ++ 
+                " ^ 10" ++ "\nis\n" ++ show product_ ++ " ^ 10") $ do
             mulInt m1 m2 `shouldBe` product_
 
