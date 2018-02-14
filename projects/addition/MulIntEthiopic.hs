@@ -1,5 +1,6 @@
 module MulIntEthiopic where
 import Test.Hspec
+import Data.Bits (shift, Bits(..))
 
 mulIntEthiopic :: Integer -> Integer -> Integer
 mulIntEthiopic x y
@@ -14,11 +15,11 @@ mulIntEthiopic'' a b =
     map snd $
     filter (odd . fst) $
     zip (takeWhile (>= 1) $ iterate halve a) (iterate double b) where
-        halve :: Integral a => a -> a
-        halve = (`div` 2)
+        halve :: (Integral a, Bits a) => a -> a
+        halve i = shift i (-1)
          
-        double :: Integral a => a -> a
-        double a = a + a
+        double :: (Integral a, Bits a) => a -> a
+        double i = shift i 1
 
 
 m1 :: Integer
