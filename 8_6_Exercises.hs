@@ -1,5 +1,6 @@
 -- 8_6_Exercises.hs
 module Exercises8 where
+import Data.Bits (shift)
 
 func :: [a] -> [a] -> [a]
 func x y = x ++ y
@@ -101,10 +102,10 @@ nTimesZero n = go n ""
 -- mulIntEthiopic is more than 10 times faster than mulInt:
 mulIntEthiopic :: Integer -> Integer -> Integer
 mulIntEthiopic x y
-    | (y < 0 || x < 0) && abs y < abs x = - (mulIntEthiopic'' (abs x) (abs y))
-    | (y < 0 || x < 0) && abs x < abs y = - (mulIntEthiopic'' (abs y) (abs x))
-    | y > x = mulIntEthiopic'' x y
-    | otherwise = mulIntEthiopic'' y x
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulIntEthiopic'' (abs x) (abs y))
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs x < abs y = - (mulIntEthiopic'' (abs y) (abs x))
+    | y > x = mulIntEthiopic'' (abs x) (abs y)
+    | otherwise = mulIntEthiopic'' (abs y) (abs x)
  
 mulIntEthiopic'' :: Integer -> Integer -> Integer
 mulIntEthiopic'' a b =
@@ -112,37 +113,43 @@ mulIntEthiopic'' a b =
     map snd $
     filter (odd . fst) $
     zip (takeWhile (>= 1) $ iterate halve a) (iterate double b) where
-        halve :: Integral a => a -> a
-        halve = (`div` 2)
+        halve :: Integer -> Integer
+        halve i = shift i (-1)
          
-        double :: Integral a => a -> a
-        double a = a + a
+        double :: Integer -> Integer
+        double i = shift i 1
 
-mulInt' :: Integral a => a -> a -> a
-mulInt' 0 _ = 0
-mulInt' _ 0 = 0
-mulInt' x 1 = x
-mulInt' 1 y = y
-mulInt' x y = x + mulInt' x (y - 1)
+productOf :: Integer -> Integer -> Integer
+productOf 0 _ = 0
+productOf _ 0 = 0
+productOf x 1 = x
+productOf 1 y = y
+productOf x 2 = shift x 1
+productOf x 3 = x + shift x 1
+productOf x 4 = shift x 2
+productOf x 5 = x + shift x 2
+productOf x 6 = (shift x 1) + shift x 2
+productOf x 7 = x + (shift x 1) + shift x 2
+productOf x 8 = shift x 3
+productOf x 9 = x + shift x 3
+productOf x y = x + productOf x (y - 1)
 
-mulInt :: (Integral a, Show a, Read a) => a -> a -> a
+mulInt :: Integer -> Integer -> Integer
 mulInt x y
-    | (y < 0 || x < 0) && abs y < abs x = - (mulInt'' (abs x) (abs y))
-    | (y < 0 || x < 0) && abs x < abs y = - (mulInt'' (abs y) (abs x))
-    | y < x = mulInt'' x y
-    | otherwise = mulInt'' y x
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulInt'' (abs x) (abs y))
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs x < abs y = - (mulInt'' (abs y) (abs x))
+    | y < x = mulInt'' (abs x) (abs y)
+    | otherwise = mulInt'' (abs y) (abs x)
 
---   876 * 234
---    3504    +     3504 = 876 * 4
---   2628 *10 +     2628 = 876 * 3
---  1752 *100 +     1752 = 876 * 2
---  204984      Result
--- version using above method for calculation
-mulInt'' :: (Integral a, Show a, Read a) => a -> a -> a
+mulInt'' :: Integer -> Integer -> Integer
 mulInt'' x y = go x y 0
     where go a b res
             | b == 0 = res
-            | otherwise = go (mulIntx10_n a 1) (div b 10) (res + mulInt' a (mod b 10))
+            | otherwise = go (mulIntx10 a) (div b 10) (res + productOf a (mod b 10))
+
+-- multiply Integer x by 10
+mulIntx10 :: Integer -> Integer
+mulIntx10 x = (shift x 1) + shift x 3
 
 sumTo' :: (Eq a, Num a) => a -> a
 sumTo' 0 = 0

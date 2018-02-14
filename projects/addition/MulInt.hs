@@ -25,10 +25,10 @@ productOf x y = x + productOf x (y - 1)
 
 mulInt :: Integer -> Integer -> Integer
 mulInt x y
-    | (y < 0 || x < 0) && abs y < abs x = - (mulInt'' (abs x) (abs y))
-    | (y < 0 || x < 0) && abs x < abs y = - (mulInt'' (abs y) (abs x))
-    | y < x = mulInt'' x y
-    | otherwise = mulInt'' y x
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulInt'' (abs x) (abs y))
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs x < abs y = - (mulInt'' (abs y) (abs x))
+    | y < x = mulInt'' (abs x) (abs y)
+    | otherwise = mulInt'' (abs y) (abs x)
 
 mulInt'' :: Integer -> Integer -> Integer
 --mulInt'' x y = go x (lastIntDigit y) 0 0 where

@@ -4,10 +4,10 @@ import Data.Bits (shift)
 
 mulIntEthiopic :: Integer -> Integer -> Integer
 mulIntEthiopic x y
-    | (y < 0 || x < 0) && abs y < abs x = - (mulIntEthiopic'' (abs x) (abs y))
-    | (y < 0 || x < 0) && abs x < abs y = - (mulIntEthiopic'' (abs y) (abs x))
-    | y > x = mulIntEthiopic'' x y
-    | otherwise = mulIntEthiopic'' y x
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulIntEthiopic'' (abs x) (abs y))
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs x < abs y = - (mulIntEthiopic'' (abs y) (abs x))
+    | y > x = mulIntEthiopic'' (abs x) (abs y)
+    | otherwise = mulIntEthiopic'' (abs y) (abs x)
  
 mulIntEthiopic'' :: Integer -> Integer -> Integer
 mulIntEthiopic'' a b =
