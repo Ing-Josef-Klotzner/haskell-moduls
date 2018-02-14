@@ -1,6 +1,6 @@
 module MulInt where
 import Test.Hspec
-import Data.Char (digitToInt)
+--import Data.Char (digitToInt)
 import Data.Bits (shift, Bits(..))
 
 --Write a function that multiplies two numbers using recur-
@@ -13,6 +13,14 @@ productOf 0 _ = 0
 productOf _ 0 = 0
 productOf x 1 = x
 productOf 1 y = y
+productOf x 2 = shift x 1
+productOf x 3 = x + shift x 1
+productOf x 4 = shift x 2
+productOf x 5 = x + shift x 2
+productOf x 6 = (shift x 1) + shift x 2
+productOf x 7 = x + (shift x 1) + shift x 2
+productOf x 8 = shift x 3
+productOf x 9 = x + shift x 3
 productOf x y = x + productOf x (y - 1)
 
 mulInt :: Integer -> Integer -> Integer
@@ -23,25 +31,29 @@ mulInt x y
     | otherwise = mulInt'' y x
 
 mulInt'' :: Integer -> Integer -> Integer
-mulInt'' x y = go x (lastIntDigit y) 0 0 where
-    go xg yg cnt res
-        | cnt == (length $ show y) = res
-        | otherwise = go (mulIntx10 xg) (digitOfPos10_n (cnt + 1) y) (cnt + 1) (res + productOf xg yg) 
-
-lastIntDigit :: Integer -> Integer
-lastIntDigit i = fromIntegral $ digitToInt $ last $ show i
-
--- return digit of position 10^n of x
--- returns -1, if not existing
-digitOfPos10_n :: Int -> Integer -> Integer
-digitOfPos10_n n x
-    | n > y = -1
-    | otherwise = fromIntegral $ digitToInt $ show x !! (y - n) where
-        y = (length $ show x) - 1
+--mulInt'' x y = go x (lastIntDigit y) 0 0 where
+--    go xg yg cnt res
+--        | cnt == (length $ show y) = res
+--        | otherwise = go (mulIntx10 xg) (digitOfPos10_n (cnt + 1) y) (cnt + 1) (res + productOf xg yg) 
+mulInt'' x y = go x y 0
+    where go a b res
+            | b == 0 = res
+            | otherwise = go (mulIntx10 a) (div b 10) (res + productOf a (mod b 10))
 
 -- multiply Integer x by 10
 mulIntx10 :: Integer -> Integer
 mulIntx10 x = x + x + shift x 3
+
+--lastIntDigit :: Integer -> Integer
+--lastIntDigit i = fromIntegral $ digitToInt $ last $ show i
+
+---- return digit of position 10^n of x
+---- returns -1, if not existing
+--digitOfPos10_n :: Int -> Integer -> Integer
+--digitOfPos10_n n x
+--    | n > y = -1
+--    | otherwise = fromIntegral $ digitToInt $ show x !! (y - n) where
+--        y = (length $ show x) - 1
 
 m1 :: Integer
 m1 =  418865413135035184311351513108877941561332032032020320246845181975110515101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238101564681554989856512288522222565884665564422221221154412158885188511238
