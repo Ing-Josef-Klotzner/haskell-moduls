@@ -1,7 +1,7 @@
 module MulIntShift where
 import Test.Hspec
 --import Data.Char (digitToInt)
-import Data.Bits (shift, Bits(..))
+import Data.Bits (shift, testBit)
 
 -- version using purely bit shifting
 -- created by Ing. Josef Klotzner

@@ -1,6 +1,6 @@
 -- 8_6_Exercises.hs
 module Exercises8 where
-import Data.Bits (shift)
+import Data.Bits (shift, testBit)
 
 func :: [a] -> [a] -> [a]
 func x y = x ++ y
