@@ -3,19 +3,19 @@ import Test.Hspec
 
 -- version from 8_6_Exercises.hs
 
-mulInt' :: Integral a => a -> a -> a
-mulInt' 0 _ = 0
-mulInt' _ 0 = 0
-mulInt' x 1 = x
-mulInt' 1 y = y
-mulInt' x y = x + mulInt' x (y - 1)
+mulIntO' :: Integral a => a -> a -> a
+mulIntO' 0 _ = 0
+mulIntO' _ 0 = 0
+mulIntO' x 1 = x
+mulIntO' 1 y = y
+mulIntO' x y = x + mulIntO' x (y - 1)
 
-mulInt :: (Integral a, Show a, Read a) => a -> a -> a
-mulInt x y
-    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulInt'' (abs x) (abs y))
-    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs x < abs y = - (mulInt'' (abs y) (abs x))
-    | y < x = mulInt'' (abs x) (abs y)
-    | otherwise = mulInt'' (abs y) (abs x)
+mulIntO :: (Integral a, Show a, Read a) => a -> a -> a
+mulIntO x y
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulIntO'' (abs x) (abs y))
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs x < abs y = - (mulIntO'' (abs y) (abs x))
+    | y < x = mulIntO'' (abs x) (abs y)
+    | otherwise = mulIntO'' (abs y) (abs x)
 
 --   876 * 234
 --    3504    +     3504 = 876 * 4
@@ -23,11 +23,11 @@ mulInt x y
 --  1752 *100 +     1752 = 876 * 2
 --  204984      Result
 -- version using above method for calculation
-mulInt'' :: (Integral a, Show a, Read a) => a -> a -> a
-mulInt'' x y = go x y 0
+mulIntO'' :: (Integral a, Show a, Read a) => a -> a -> a
+mulIntO'' x y = go x y 0
     where go a b res
             | b == 0 = res
-            | otherwise = go (mulIntx10_n a 1) (div b 10) (res + mulInt' a (mod b 10))
+            | otherwise = go (mulIntx10_n a 1) (div b 10) (res + mulIntO' a (mod b 10))
 
 -- multiply Integer x by 10^n
 mulIntx10_n :: (Read a, Show a, Integral a) => a -> a -> a
@@ -52,11 +52,15 @@ product_ = 734891971525875259509112393935049162198943316427668060049630140893808
 
 main :: IO ()
 main = hspec $ do
-    describe "Multiplication   ... this will take about a minute!" $ do
-        it "-100 multiplied by 3 is -300" $ do
-            mulInt (-100) 3 `shouldBe` (-300)
-    describe "Multiplication" $ do
+    describe "Multiplication  ... this will take about a minute!" $ do
+        it "-100 multiplied by 3 is -300" $ do" $ do
         it (show m1 ++ " ^ 10" ++ "\nmultiplied by\n" ++ show m1 ++ 
                 " ^ 10" ++ "\nis\n" ++ show product_ ++ " ^ 10") $ do
-            mulInt (m1 ^ 10) (m2 ^ 10) `shouldBe` (product_ ^ 10)
+            mulIntO (m1 ^ 10) (m2 ^ 10) `shouldBe` (product_ ^ 10)
+        it "-100 multiplied by 3 is -300" $ do
+            mulIntO (-100) 3 `shouldBe` (-300)
+        it "100 multiplied by -3 is -300" $ do
+            mulIntO 100 (-3) `shouldBe` (-300)
+        it "-100 multiplied by -3 is 300" $ do
+            mulIntO (-100) (-3) `shouldBe` 300
 

@@ -99,7 +99,23 @@ nTimesZero n = go n ""
             | ct == 0 = str
             | otherwise = go (ct - 1) (str ++ "0")
 
--- mulIntEthiopic is more than 10 times faster than mulInt:
+-- version using purely bit shifting
+mulIntS :: Integer -> Integer -> Integer
+mulIntS x y
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulIntS'' (abs x) (abs y))
+    | (y > 0 && x < 0) || (y < 0 && x > 0) && abs x < abs y = - (mulIntS'' (abs y) (abs x))
+    | y < x = mulIntS'' (abs x) (abs y)
+    | otherwise = mulIntS'' (abs y) (abs x)
+
+mulIntS'' :: Integer -> Integer -> Integer
+mulIntS'' x y = go 0 where
+    go cnt
+        | shift 1 cnt > y = 0
+        | testBit y cnt = shift x cnt + go (cnt + 1)
+        | otherwise = 0 + go (cnt + 1)
+
+
+-- mulIntEthiopic:
 mulIntEthiopic :: Integer -> Integer -> Integer
 mulIntEthiopic x y
     | (y > 0 && x < 0) || (y < 0 && x > 0) && abs y < abs x = - (mulIntEthiopic'' (abs x) (abs y))
