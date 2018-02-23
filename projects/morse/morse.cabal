@@ -1,0 +1,65 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 6380123ecbb09efe131f72f883d4051cfefb8961e98b527b449d0bcbd059d1a0
+
+name:           morse
+version:        0.1.0.0
+description:    Please see the README on Github at <https://github.com/Ing-Josef-Klotzner/haskell-moduls/tree/haskell-training/projects/morse#readme>
+homepage:       https://github.com/Ing-Josef-Klotzner/haskell-moduls/tree/haskell-training/projects/morse#readme
+bug-reports:    https://github.com/Ing-Josef-Klotzner/haskell-moduls/tree/haskell-training/projects/morse/issues
+author:         Ing. Josef Klotzner
+maintainer:     Ing. Josef Klotzner
+copyright:      2018 Ing. Josef Klotzner
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+extra-source-files:
+    ChangeLog.md
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/Ing-Josef-Klotzner/haskell-moduls/tree/haskell-training/projects/morse
+
+library
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+      , containers
+      , QuickCheck
+  exposed-modules:
+      Morse
+  other-modules:
+      Paths_morse
+  default-language: Haskell2010
+
+executable morse
+  main-is: Main.hs
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -fwarn-tabs -threaded -rtsopts
+  build-depends:
+      base >=4.7 && <5
+    , morse
+    , QuickCheck
+  other-modules:
+      Paths_morse
+  default-language: Haskell2010
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: tests.hs
+  hs-source-dirs:
+      tests
+  ghc-options: -threaded -rtsopts
+  build-depends:
+      base >=4.7 && <5
+    , QuickCheck
+  other-modules:
+      Paths_morse
+  default-language: Haskell2010

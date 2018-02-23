@@ -1,5 +1,5 @@
 -- tests/tests.hs
-module Main where
+module MorseTests where
 import qualified Data.Map as M
 import Morse
 import Test.QuickCheck
