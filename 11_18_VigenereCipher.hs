@@ -38,6 +38,7 @@ infKey key_ = key_ ++ infKey key_
 teststring = "this is a text to be cyphered"
 -- keypattern creates a string of repeating key, matching only characters (positions) to cipher
 keypattern :: [Char] -> [Char] -> [Char]
+keypattern "" strToCyph = keypattern "A" strToCyph -- leave it unchanged on empty keyword
 keypattern key_ strToCyph = go "" 0 0
     where go kp scnt pcnt
             | length kp == length strToCyph = kp
