@@ -275,13 +275,7 @@ testMonoid = do
     x :: Int  <- arbitrary
     pure $ unCombine (f1 <> f2 <> f3) x  == unCombine (f1 <> (f2 <> f3)) x
 
---combineEquality :: (Arbitrary a, Show a, Eq b, Show b) => Combine a b -> Combine a b -> Property
---combineEquality (Combine f) (Combine g) = property $ \a -> f a === g a
-
 type CombineAssoc a b = a -> Combine a b -> Combine a b -> Combine a b -> Bool
-
---combineAssoc :: (Arbitrary a, Show a, Eq b, Show b) => CombineAssoc a b
---combineAssoc f g h = ((f <> g) <> h) `combineEquality` (f <> (g <> h))
 
 -- not used
 genFunc :: (CoArbitrary a, Arbitrary b) => Gen (a -> b)
