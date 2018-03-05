@@ -447,25 +447,6 @@ newtype Mem s a =
     Mem {
         runMem :: s -> (a,s)
     }
-instance Semigroup a => Semigroup (Mem s a) where
-  Mem f <> Mem g = Mem (\x ->
-    let (a, b) = g x
-        -- apply f to the b result of g x
-        (c, d) = f b
-    -- return the new tuple with the first constituents combined
-    in (a <> c, d))
-instance (Semigroup a, Monoid a) => Monoid (Mem s a) where
-    mempty = Mem $ \s -> (mempty, s)
-    mappend = (<>)
-
-instance Show (Mem a b) where
-    show (f) = "Mem " ++ "<function>"
-
-memIdentity :: (Eq a, Eq b, Monoid b, Semigroup b) => Mem a b -> a -> Bool
-memIdentity f x = (runMem (f <> mempty) $ x) == (runMem (mempty <> f) $ x)
-
-instance (CoArbitrary a, Arbitrary a, Arbitrary b) => Arbitrary (Mem a b) where
-  arbitrary = Mem <$> arbitrary   --(equivalent to   fmap Combine arbitrary)
 
 --Given the following code:
 f' = Mem $ \s -> ("hi", s + 1)
@@ -499,6 +480,25 @@ f' = Mem $ \s -> ("hi", s + 1)
 --one function to the other. You’ll want to check the identity
 --laws as a common first attempt will break them.
 
+instance Semigroup a => Semigroup (Mem s a) where
+  Mem f <> Mem g = Mem (\x ->
+    let (a, b) = g x
+        -- apply f to the b result of g x
+        (c, d) = f b
+    -- return the new tuple with the first constituents combined
+    in (a <> c, d))
+instance (Semigroup a, Monoid a) => Monoid (Mem s a) where
+    mempty = Mem $ \s -> (mempty, s)
+    mappend = (<>)
+
+instance Show (Mem a b) where
+    show (f) = "Mem " ++ "<function>"
+
+memIdentity :: (Eq a, Eq b, Monoid b, Semigroup b) => Mem a b -> a -> Bool
+memIdentity f x = (runMem (f <> mempty) $ x) == (runMem (mempty <> f) $ x)
+
+instance (CoArbitrary a, Arbitrary a, Arbitrary b) => Arbitrary (Mem a b) where
+  arbitrary = Mem <$> arbitrary   --(equivalent to   fmap Combine arbitrary)
 
 main :: IO ()
 main = do
