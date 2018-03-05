@@ -416,10 +416,6 @@ instance (Semigroup b, Monoid b) => Monoid (Combine a b) where
     mempty = Combine mempty
     mappend = (<>)
 
--- can there be a useful Eq instance?
---instance (Eq b, Semigroup b, Monoid b) => Eq (Combine a b) where
---    (Combine f) == mempty = (Combine f) == mempty
-
 instance Monoid PlusInt where
     mempty = PlusInt 0
     PlusInt a `mappend` PlusInt b = PlusInt $ a + b
@@ -437,9 +433,6 @@ monoidIdentity f x = (unCombine (mappend f mempty) $ x) == (unCombine (mappend m
 instance Monoid (Comp a) where
     mempty = Comp id
     mappend = (<>)
--- can there be a useful Eq instance?
---instance (Eq a, Semigroup a, Monoid a) => Eq (Comp a) where
---    (Comp f1) == mempty = (Comp f1) == mempty
 
 monoidCpIdentity :: (Eq a) => Comp a -> a -> Bool
 monoidCpIdentity f x = (unComp (f <> mempty) $ x) == (unComp (mempty <> f) $ x)
@@ -454,9 +447,26 @@ newtype Mem s a =
     Mem {
         runMem :: s -> (a,s)
     }
-instance Monoid a => Monoid (Mem s a) where
-    mempty = Mem (runMem mempty)   -- compiles but is bullshit
-    mappend = undefined
+instance Semigroup a => Semigroup (Mem s a) where
+  Mem f <> Mem g = Mem (\x ->
+    let (a, b) = g x
+        -- apply f to the b result of g x
+        (c, d) = f b
+    -- return the new tuple with the first constituents combined
+    in (a <> c, d))
+instance (Semigroup a, Monoid a) => Monoid (Mem s a) where
+    mempty = Mem $ \s -> (mempty, s)
+    mappend = (<>)
+
+instance Show (Mem a b) where
+    show (f) = "Mem " ++ "<function>"
+
+memIdentity :: (Eq a, Eq b, Monoid b, Semigroup b) => Mem a b -> a -> Bool
+memIdentity f x = (runMem (f <> mempty) $ x) == (runMem (mempty <> f) $ x)
+
+instance (CoArbitrary a, Arbitrary a, Arbitrary b) => Arbitrary (Mem a b) where
+  arbitrary = Mem <$> arbitrary   --(equivalent to   fmap Combine arbitrary)
+
 --Given the following code:
 f' = Mem $ \s -> ("hi", s + 1)
 
@@ -557,10 +567,15 @@ main = do
         failure = Failure'
         success :: Int -> Validation String Int
         success = Success'
-    print $ success 1 <> failure "blah"
-    print $ failure "woot" <> failure "blah"
-    print $ success 1 <> success 2
-    print $ failure "woot" <> success 2
+    putStrLn $ "\n" ++
+        " >let failure :: String -> Validation String Int\n" ++
+        " >    failure = Failure'\n" ++
+        " >    success :: Int -> Validation String Int\n" ++
+        " >    success = Success'"
+    putStrLn $ " >success 1 <> failure \"blah\"\n" ++ show (success 1 <> failure "blah")
+    putStrLn $ " >failure \"woot\" <> failure \"blah\"\n" ++ show (failure "woot" <> failure "blah")
+    putStrLn $ " >success 1 <> success 2\n" ++ show (success 1 <> success 2)
+    putStrLn $ " >failure \"woot\" <> success 2\n" ++ show (failure "woot" <> success 2)
 
 -- Monoid Exercises:
 
@@ -568,7 +583,7 @@ main = do
 --    putStrLn "Testing   semigroupAssoc a b c = (a <> (b <> c)) == ((a <> b) <> c)   ..."
 --    putStrLn "with   type TrivAssoc = Trivial -> Trivial -> Trivial -> Bool"
 --    quickCheck (semigroupAssoc :: TrivAssoc)
-    putStrLn "Testing   monoidLeftIdentity m = mappend mempty m == m   ..."
+    putStrLn "\nTesting   monoidLeftIdentity m = mappend mempty m == m   ..."
     putStrLn "with   type Trivial -> Bool"
     quickCheck (monoidLeftIdentity :: Trivial -> Bool)
     putStrLn "Testing   monoidRightIdentity m = mappend m mempty == m   ..."
@@ -603,23 +618,28 @@ main = do
     putStrLn "with   type BoolDisj -> Bool"
     quickCheck (monoidLeftIdentity :: BoolDisj -> Bool)
 
-    putStrLn "Testing   monoidIdentity f x = (unCombine (mappend f mempty) $ x) == (unCombine (mappend mempty f) $ x)   ..."
+    putStrLn "Testing   monoidIdentity f x = (unCombine (f <> mempty) $ x) == (unCombine (mempty <> f) $ x)   ..."
     putStrLn "with   type Combine Int PlusInt -> Int -> Bool"
     quickCheck (monoidIdentity :: Combine Int PlusInt -> Int -> Bool)
-    putStrLn "Testing   monoidCpIdentity f x = (unComp (mappend f mempty) $ x) == (unComp (mappend mempty f) $ x)   ..."
+
+    putStrLn "Testing   monoidCpIdentity f x = (unComp (f <> mempty) $ x) == (unComp (mempty <> f) $ x)   ..."
     putStrLn "with   type Comp PlusInt -> PlusInt -> Bool"
     quickCheck (monoidCpIdentity :: Comp PlusInt -> PlusInt -> Bool)
     
-    putStrLn "Testing   monoidCpIdentity f x = (unComp (mappend f mempty) $ x) == (unComp (mappend mempty f) $ x)   ..."
+    putStrLn "Testing   monoidCpIdentity f x = (unComp (f <> mempty) $ x) == (unComp (mempty <> f) $ x)   ..."
     putStrLn "with   type Comp Int -> Int -> Bool"
     quickCheck (monoidCpIdentity :: Comp Int -> Int -> Bool)
 
---    let rmzero = runMem mempty 0
---        rmleft = runMem (f' <> mempty) 0
---        rmright = runMem (mempty <> f') 0
---    print $ rmleft
---    print $ rmright
---    print $ (rmzero :: (String, Int))
---    print $ rmleft == runMem f' 0
---    print $ rmright == runMem f' 0
+    let rmzero = runMem mempty 0
+        rmleft = runMem (f' <> mempty) 0
+        rmright = runMem (mempty <> f') 0
+    putStrLn $ "\n >runMem (f' <> mempty) 0\n" ++ show rmleft
+    putStrLn $ " >runMem (mempty <> f') 0\n" ++ show rmright
+    putStrLn $ " >runMem mempty 0\n" ++ show (rmzero :: (String, Int))
+    putStrLn $ " >runMem (f' <> mempty) 0 == runMem f' 0\n" ++ show (rmleft == runMem f' 0)
+    putStrLn $ " >runMem (mempty <> f') 0 == runMem f' 0\n" ++ show (rmright == runMem f' 0)
+
+    putStrLn "\nTesting   memIdentity f x = (runMem (f <> mempty) $ x) == (runMem (mempty <> f) $ x)   ..."
+    putStrLn "with   type Mem Int PlusInt -> Int -> Bool"
+    quickCheck (memIdentity :: Mem Int PlusInt -> Int -> Bool)
 
