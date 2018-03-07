@@ -39,6 +39,7 @@ type IntListCmpsId = [Int] -> Fun Int Int -> Fun Int (Identity Int) -> Bool
 propIdent :: Identity [Int] -> Bool
 propIdent x = functorIdentity (Identity x)
 
+
 -- 2.
 data Pair a = Pair a a
 instance Functor (Pair) where
@@ -62,7 +63,7 @@ instance Arbitrary a => Arbitrary (Pair a) where
 -- 3.
 data Two a b = Two a b
 instance Functor (Two a) where
-    fmap f (Two a b) = Two a (f b) 
+    fmap f (Two a b) = Two a (f b)
 instance (Eq a, Eq b) => Eq (Two a b) where
     Two a b == Two a' b' = (a == a') && (b == b')
 instance (Show a, Show b) => Show (Two a b) where
@@ -143,7 +144,6 @@ genFour = do
 instance (Arbitrary a, Arbitrary b, Arbitrary c, Arbitrary d) => Arbitrary (Four a b c d) where
     arbitrary = genFour
 
-
 --7.
 data Four' a b = Four' a a a b
 instance Functor (Four' a) where
@@ -188,7 +188,7 @@ main = do
     putStrLn $ "Testing   functorCompose' x (Fun _ f) (Fun _ g) = (fmap (g . f) x) == (fmap g . fmap f $ x)\n" ++
                 "with type   [Int] -> Fun Int Int -> Fun Int (Pair Int) -> Bool"
     quickCheck (functorCompose' :: IntListCmpsPair)
-    
+
     putStrLn $ "Testing   functorIdentity f = fmap id f == f\n" ++
                 "with type   Two [Int] [Int] -> Bool"
     quickCheck (functorIdentity :: IntListTwo)
