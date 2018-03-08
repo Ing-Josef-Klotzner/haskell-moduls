@@ -33,8 +33,10 @@ d = fmap ((return '1' ++) . show) (\x -> [x, 1..3])
 --5.
 e :: IO Integer
 e = let ioi = readIO "1" :: IO Integer
-        changed = fmap (fmap read ("123"++)) (fmap show ioi)
-    in  fmap  (*3) changed
+--        changed = fmap (fmap read ("123"++)) (fmap show ioi)
+--  is the same as:
+        changed = read . ("123" ++) . show <$> ioi
+    in  (*3) <$> changed
 --Prelude> e
 --3693
 
@@ -54,8 +56,8 @@ main = do
     
     putStrLn $ "e :: IO Integer\n" ++ 
             "e = let ioi = readIO \"1\" :: IO Integer\n" ++
-            "        changed = fmap (fmap read (\"123\"++)) (fmap show ioi)\n" ++
-            "    in  fmap  (*3) changed\n\n" ++
+            "        changed = read . (\"123\" ++) . show <$> ioi\n" ++
+            "    in  (*3) <$> changed\n\n" ++
             " *>e"
     out <- e            
     putStrLn $ show out
