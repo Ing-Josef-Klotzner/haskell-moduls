@@ -126,11 +126,11 @@ instance Show b => Show (EvilGoateeConst a b) where
 
 --5.
 -- Do you need something  extra to make the instance work?
-data LiftItOut f a = LiftItOut (f a)
+data LiftItOut f a = LiftItOut (f a) deriving Show
 instance Functor f => Functor (LiftItOut f) where
     fmap f' (LiftItOut f) = LiftItOut (fmap f' f)
-instance Functor f => Show (LiftItOut f a) where
-    show (LiftItOut f) = "LiftItOut <function>"
+--instance Functor f => Show (LiftItOut f a) where
+--    show (LiftItOut f) = "LiftItOut <function>"
 
 -- 6.
 data Parappa f g a = DaWrappa (f a) (g a)
