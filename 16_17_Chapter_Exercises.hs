@@ -126,29 +126,60 @@ instance Show b => Show (EvilGoateeConst a b) where
 
 --5.
 -- Do you need something  extra to make the instance work?
-data LiftItOut f a = LiftItOut (f a) deriving Show
+data LiftItOut f a = LiftItOut (f a)   -- deriving Show
 instance Functor f => Functor (LiftItOut f) where
     fmap f' (LiftItOut f) = LiftItOut (fmap f' f)
---instance Functor f => Show (LiftItOut f a) where
---    show (LiftItOut f) = "LiftItOut <function>"
+instance Show (f a) => Show (LiftItOut f a) where
+    show (LiftItOut f) = "LiftItOut " ++ show f
+-- *Exercises_16_17> fmap (*3) (LiftItOut [5])
+--LiftItOut [15]
 
 -- 6.
 data Parappa f g a = DaWrappa (f a) (g a)
+instance (Functor f, Functor g) => Functor (Parappa f g) where
+    fmap f' (DaWrappa f g) = DaWrappa (fmap f' f) (fmap f' g)
+instance (Show (f a), Show (g a)) => Show (Parappa f g a) where
+    show (DaWrappa f g) = "DaWrappa " ++ show f ++ show g
+-- *Exercises_16_17> fmap (*3) (DaWrappa [5] [7])
+--DaWrappa [15][21]
 
 --7.
 --Don’t ask for more typeclass instances than you need. You
 --can let GHC tell you what to do.
-data IgnoreOne f g a b = IgnoringSomething (f a) (g b)
+data IgnoreOne f g a b = IgnoringSomething (f a) (g b)   -- deriving Show
+instance (Functor f, Functor g) => Functor (IgnoreOne f g b) where
+    fmap f' (IgnoringSomething f g) = IgnoringSomething (f) (fmap f' g)
+instance (Show (f a), Show (g b)) => Show (IgnoreOne f g a b) where
+    show (IgnoringSomething f g) = "IgnoringSomething " ++ show f ++ show g
+-- *Exercises_16_17> fmap (*3) (IgnoringSomething [3] [5])
+--IgnoringSomething [3][15]
 
 --8.
-data Notorious g o a t = Notorious (g o) (g a) (g t)
+data Notorious g o a t = Notorious (g o) (g a) (g t)   --deriving Show
+instance (Functor g) => Functor (Notorious g o a) where
+    fmap f' (Notorious g g' g'') = Notorious g g' (fmap f' g'')
+instance (Show (g o), Show (g a), Show (g t)) => Show (Notorious g o a t) where
+    show (Notorious g g' g'') = "Notorious " ++ show g ++ show g' ++ show g''
+-- *Exercises_16_17> fmap (*3) (Notorious [3] [5] [6])
+--Notorious [3][5][18]
 
 -- 9. You’ll need to use recursion.
-data List a = Nil | Cons a (List a)
+data List a = Nil | Cons a (List a) deriving Show
+instance Functor List where
+    fmap f Nil = Nil
+    fmap f (Cons a lis) = Cons (f a) (fmap f lis) 
+-- *Exercises_16_17> fmap (*3) (Cons 3 (Cons 5 Nil))
+--Cons 9 (Cons 15 Nil)
 
 --10. A tree of goats forms a Goat-Lord, fearsome poly-creature.
-data GoatLord a = NoGoat | OneGoat a | MoreGoats (GoatLord a) (GoatLord a) (GoatLord a)
+data GoatLord a = NoGoat | OneGoat a | MoreGoats (GoatLord a) (GoatLord a) (GoatLord a) deriving Show
 -- A VERITABLE HYDRA OF GOATS
+instance Functor GoatLord where
+    fmap f NoGoat = NoGoat
+    fmap f (OneGoat a) = OneGoat (f a)
+    fmap f (MoreGoats g1 g2 g3) = MoreGoats (fmap f g1) (fmap f g2) (fmap f g3)
+-- *Exercises_16_17> fmap (*3) (MoreGoats (OneGoat 4) (OneGoat 8) (OneGoat 9))
+--MoreGoats (OneGoat 12) (OneGoat 24) (OneGoat 27)
 
 --11. You’ll use an extra functor for this one, although your so-
 --lution might do it monomorphically without using fmap.
@@ -156,4 +187,16 @@ data GoatLord a = NoGoat | OneGoat a | MoreGoats (GoatLord a) (GoatLord a) (Goat
 --date this one in the usual manner. Do your best to make
 --it work.
 data TalkToMe a = Halt | Print String a | Read (String -> a)
+instance Functor TalkToMe where
+    fmap f Halt = Halt
+    fmap f (Print s a) = Print s (f a)
+    fmap f (Read g) = Read (fmap f g)
+instance Show a => Show (TalkToMe a) where
+    show (Halt) = "Halt"
+    show (Print s a) = "Print " ++ show s ++ " " ++ show a
+    show (Read fs) = "Read " ++ "<function>"   --show fs
+-- *Exercises_16_17> fmap (*3) (Print "hi" 5)
+--Print "hi" 15
+-- *Exercises_16_17> fmap (*3) (Read (read))
+--Read <function>
 
