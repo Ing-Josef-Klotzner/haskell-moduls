@@ -3,7 +3,8 @@ module ChapterExercises18 where
 import Test.QuickCheck
 import Test.QuickCheck.Checkers
 import Test.QuickCheck.Classes
-
+import Control.Monad (join)
+import Control.Applicative ((<**>))
 --18.7 Chapter Exercises
 --Write Monad instances for the following types. Use the QuickCheck
 --properties we showed you to validate your instances.
@@ -80,10 +81,13 @@ instance Applicative List  where
     Nil <*> _ = Nil
     _ <*> Nil = Nil
     (Cons a as) <*> xs = append (a <$> xs) (as <*> xs)
+concat' :: List (List a) -> List a
+concat' Nil = Nil
+concat' (Cons Nil as) = concat' as
+concat' (Cons a as) = append a (concat' as)
 instance Monad List where
-    return = pure
-    Nil >>= _ = Nil
-    Cons a as >>= f = f a
+    Nil >>= _   = Nil
+    as  >>= f   = concat' $ fmap f as
 instance Arbitrary a => Arbitrary (List a) where
     arbitrary = do
         a <- arbitrary
@@ -95,6 +99,77 @@ instance Eq a => EqProp (List a) where
 --Write the following functions using the methods provided
 --by Monad and Functor. Using stuff like identity and composition
 --is fine, but it has to typecheck with types provided.
+-- 1.
+j :: Monad m => m (m a) -> m a
+j x = x >>= id    --  = join
+j' x = do
+    y <- x
+    y
+--Expecting the following behavior:
+--Prelude> j [[1, 2], [], [3]]
+--[1,2,3]
+--Prelude> j (Just (Just 1))
+--Just 1
+--Prelude> j (Just Nothing)
+--Nothing
+--Prelude> j Nothing
+--Nothing
+
+-- 2.
+l1 :: Monad m => (a -> b) -> m a -> m b
+l1 f x = fmap f x
+-- *ChapterExercises18> l1 (+1) [2,3,4]
+--[3,4,5]
+-- 3.
+l2 :: Monad m => (a -> b -> c) -> m a -> m b -> m c
+l2 f x = (<*>) (fmap f x)   -- = liftA2
+l2' f x y =
+    y >>= (\y'
+        -> x >>= (\x'
+            -> return $ f x' y'))
+l2'' f x y = do
+  a <- x
+  b <- y
+  return $ f a b
+-- *ChapterExercises18> l2 (+) [2,3,4] [3,4,5]
+--[5,6,7,6,7,8,7,8,9]
+-- 4.
+a :: Monad m => m a -> m (a -> b) -> m b
+a = l2 (\a f -> f a)   -- = <**>
+a' x fy =
+    x >>= (\a ->
+        fy >>= (\f -> return $ f a))
+a'' x fy = do
+    a <- x
+    f <- fy
+    return $ f a
+a''' x f = x <**> f
+a'''' x f = f <*> x
+-- *ChapterExercises18> a [1] [(+1)]
+--[2]
+
+-- 5.
+-- You’ll need recursion for this one.
+meh :: Monad m => [a] -> (a -> m b) -> m [b]
+meh [] _ = return []
+meh (x:xs) f =
+    f x >>= (\x' ->
+        meh xs f >>= (\xs' -> return $ x':xs'))
+meh' :: Monad m => [a] -> (a -> m b) -> m [b]
+meh' [] _ = return []
+meh' (x:xs) f = do
+    x' <- f x
+    xs' <- meh' xs f
+    return $ x':xs'
+meh'' :: Monad m => [a] -> (a -> m b) -> m [b]
+meh'' l f = traverse id (fmap f l)
+meh''' :: Monad m => [a] -> (a -> m b) -> m [b]
+meh''' = flip mapM
+-- *ChapterExercises18> meh [1,2,3] (+) 5
+--[6,7,8]
+-- 6. Hint: reuse “meh”
+flipType :: (Monad m) => [m a] -> m [a]
+flipType xs = meh xs id
 
 main :: IO ()
 main = do
