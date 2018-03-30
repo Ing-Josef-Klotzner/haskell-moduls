@@ -1,0 +1,21 @@
+Configuring X11-xft-0.3.1...
+Preprocessing library for X11-xft-0.3.1..
+Building library for X11-xft-0.3.1..
+[1 of 2] Compiling Graphics.X11.Xrender ( .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Graphics/X11/Xrender.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Graphics/X11/Xrender.o )
+
+[;1mGraphics/X11/Xrender.hsc:23:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtabs[0m[0m[;1m][0m[0m[;1m
+    Tab character found here, and in 95 further locations.
+    Please use spaces instead.[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m23 |[0m[0m [;1m[35m        [0m[0mv <- peekByteOff ptr (fromIntegral off)
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^[0m[0m
+[0m[0m[0m[2 of 2] Compiling Graphics.X11.Xft ( .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Graphics/X11/Xft.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Graphics/X11/Xft.o )
+
+[;1mGraphics/X11/Xft.hsc:10:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtabs[0m[0m[;1m][0m[0m[;1m
+    Tab character found here, and in 143 further locations.
+    Please use spaces instead.[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m10 |[0m[0m [;1m[35m        [0m[0m                , xftcolor_pixel
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^[0m[0m
+[0m[0m[0mInstalling library in /home/josef/.stack/snapshots/x86_64-linux/lts-11.1/8.2.2/lib/x86_64-linux-ghc-8.2.2/X11-xft-0.3.1-DuRlmoK9pkUBHs2ohJtt91
+Registering library for X11-xft-0.3.1..

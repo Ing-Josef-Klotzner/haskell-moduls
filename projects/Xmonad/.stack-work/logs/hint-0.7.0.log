@@ -1,0 +1,23 @@
+Configuring hint-0.7.0...
+Preprocessing library for hint-0.7.0..
+Building library for hint-0.7.0..
+[ 1 of 18] Compiling Control.Monad.Ghc ( src/Control/Monad/Ghc.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Control/Monad/Ghc.o )
+[ 2 of 18] Compiling Hint.CompatPlatform ( src/Hint/CompatPlatform.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/CompatPlatform.o )
+[ 3 of 18] Compiling Hint.GHC         ( src/Hint/GHC.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/GHC.o )
+[ 4 of 18] Compiling Hint.Extension   ( src/Hint/Extension.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Extension.o )
+[ 5 of 18] Compiling Hint.Base        ( src/Hint/Base.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Base.o )
+[ 6 of 18] Compiling Hint.Conversions ( src/Hint/Conversions.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Conversions.o )
+[ 7 of 18] Compiling Hint.Annotations ( src/Hint/Annotations.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Annotations.o )
+[ 8 of 18] Compiling Hint.Parsers     ( src/Hint/Parsers.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Parsers.o )
+[ 9 of 18] Compiling Hint.Reflection  ( src/Hint/Reflection.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Reflection.o )
+[10 of 18] Compiling Hint.Typecheck   ( src/Hint/Typecheck.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Typecheck.o )
+[11 of 18] Compiling Hint.Util        ( src/Hint/Util.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Util.o )
+[12 of 18] Compiling Hint.Context     ( src/Hint/Context.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Context.o )
+[13 of 18] Compiling Hint.Eval        ( src/Hint/Eval.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Eval.o )
+[14 of 18] Compiling Hint.Configuration ( src/Hint/Configuration.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/Configuration.o )
+[15 of 18] Compiling Hint.InterpreterT ( src/Hint/InterpreterT.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Hint/InterpreterT.o )
+[16 of 18] Compiling Language.Haskell.Interpreter ( src/Language/Haskell/Interpreter.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Language/Haskell/Interpreter.o )
+[17 of 18] Compiling Language.Haskell.Interpreter.Extension ( src/Language/Haskell/Interpreter/Extension.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Language/Haskell/Interpreter/Extension.o )
+[18 of 18] Compiling Language.Haskell.Interpreter.Unsafe ( src/Language/Haskell/Interpreter/Unsafe.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Language/Haskell/Interpreter/Unsafe.o )
+Installing library in /home/josef/.stack/snapshots/x86_64-linux/lts-11.1/8.2.2/lib/x86_64-linux-ghc-8.2.2/hint-0.7.0-FNE2wEq2qcj5lhj0CFUTt
+Registering library for hint-0.7.0..

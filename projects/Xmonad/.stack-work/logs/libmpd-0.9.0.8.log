@@ -1,0 +1,232 @@
+Configuring libmpd-0.9.0.8...
+Preprocessing library for libmpd-0.9.0.8..
+Building library for libmpd-0.9.0.8..
+[ 1 of 36] Compiling Network.MPD.Core.Error ( src/Network/MPD/Core/Error.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Core/Error.o )
+
+[;1msrc/Network/MPD/Core/Error.hs:18:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    Module ‘Control.Monad.Error’ is deprecated:
+      Use "Control.Monad.Except" instead[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m18 |[0m[0m [;1m[35mimport           Control.Monad.Error (Error(..))[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1msrc/Network/MPD/Core/Error.hs:48:10: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of type constructor or class ‘Error’
+    (imported from Control.Monad.Error, but defined in transformers-0.5.2.0:Control.Monad.Trans.Error):
+    Deprecated: "Use Control.Monad.Trans.Except instead"[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m48 |[0m[0m instance [;1m[35mError[0m[0m MPDError where
+[;1m[34m   |[0m[0m[;1m[35m          ^^^^^[0m[0m
+[0m[0m[0m
+[;1msrc/Network/MPD/Core/Error.hs:48:10: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of type constructor or class ‘Error’
+    (imported from Control.Monad.Error, but defined in transformers-0.5.2.0:Control.Monad.Trans.Error):
+    Deprecated: "Use Control.Monad.Trans.Except instead"[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m48 |[0m[0m instance [;1m[35mError[0m[0m MPDError where
+[;1m[34m   |[0m[0m[;1m[35m          ^^^^^[0m[0m
+[0m[0m[0m[ 2 of 36] Compiling Network.MPD.Core.Class ( src/Network/MPD/Core/Class.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Core/Class.o )
+
+[;1msrc/Network/MPD/Core/Class.hs:17:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    Module ‘Control.Monad.Error’ is deprecated:
+      Use "Control.Monad.Except" instead[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m17 |[0m[0m [;1m[35mimport           Control.Monad.Error (MonadError)[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[ 3 of 36] Compiling Network.MPD.Util ( src/Network/MPD/Util.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Util.o )
+
+[;1msrc/Network/MPD/Util.hs:53:16: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of ‘parseTime’
+    (imported from Data.Time.Format, but defined in time-1.8.0.2:Data.Time.Format.Parse):
+    Deprecated: "use "parseTimeM True" instead"[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m53 |[0m[0m parseIso8601 = [;1m[35mparseTime[0m[0m defaultTimeLocale iso8601Format . UTF8.toString
+[;1m[34m   |[0m[0m[;1m[35m                ^^^^^^^^^[0m[0m
+[0m[0m[0m[ 4 of 36] Compiling Network.MPD.Core ( src/Network/MPD/Core.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Core.o )
+
+[;1msrc/Network/MPD/Core.hs:32:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    Module ‘Control.Monad.Error’ is deprecated:
+      Use "Control.Monad.Except" instead[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m32 |[0m[0m [;1m[35mimport           Control.Monad.Error (ErrorT(..), MonadError(..))[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1msrc/Network/MPD/Core.hs:70:21: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of type constructor or class ‘ErrorT’
+    (imported from Control.Monad.Error, but defined in transformers-0.5.2.0:Control.Monad.Trans.Error):
+    Deprecated: "Use Control.Monad.Trans.Except instead"[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m70 |[0m[0m     MPD { runMPD :: [;1m[35mErrorT[0m[0m MPDError
+[;1m[34m   |[0m[0m[;1m[35m                     ^^^^^^[0m[0m
+[0m[0m[0m
+[;1msrc/Network/MPD/Core.hs:100:29: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of ‘runErrorT’
+    (imported from Control.Monad.Error, but defined in transformers-0.5.2.0:Control.Monad.Trans.Error):
+    Deprecated: "Use Control.Monad.Trans.Except instead"[0m[0m
+[;1m[34m    |[0m[0m
+[;1m[34m100 |[0m[0m     runReaderT (evalStateT ([;1m[35mrunErrorT[0m[0m . runMPD $ open >> (x <* close)) initState)
+[;1m[34m    |[0m[0m[;1m[35m                             ^^^^^^^^^[0m[0m
+[0m[0m[0m[ 5 of 36] Compiling Network.MPD.Applicative.Internal ( src/Network/MPD/Applicative/Internal.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Internal.o )
+
+[;1msrc/Network/MPD/Applicative/Internal.hs:34:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Control.Applicative’ is redundant
+      except perhaps to import instances from ‘Control.Applicative’
+    To import instances alone, use: import Control.Applicative()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m34 |[0m[0m [;1m[35mimport           Control.Applicative[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1msrc/Network/MPD/Applicative/Internal.hs:40:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    Module ‘Control.Monad.Error’ is deprecated:
+      Use "Control.Monad.Except" instead[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m40 |[0m[0m [;1m[35mimport           Control.Monad.Error[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[ 6 of 36] Compiling Network.MPD.Applicative.Connection ( src/Network/MPD/Applicative/Connection.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Connection.o )
+[ 7 of 36] Compiling Network.MPD.Commands.Connection ( src/Network/MPD/Commands/Connection.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Connection.o )
+[ 8 of 36] Compiling Network.MPD.Commands.Arg ( src/Network/MPD/Commands/Arg.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Arg.o )
+[ 9 of 36] Compiling Network.MPD.Commands.Types ( src/Network/MPD/Commands/Types.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Types.o )
+
+[;1msrc/Network/MPD/Commands/Types.hs:254:38: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of ‘insertWith'’ (imported from Data.Map):
+    Deprecated: "As of version 0.5, replaced by 'Data.Map.Strict.insertWith'."[0m[0m
+[;1m[34m    |[0m[0m
+[;1m[34m254 |[0m[0m sgAddTag meta value s = s { sgTags = [;1m[35mM.insertWith'[0m[0m (++) meta [value] (sgTags s) }
+[;1m[34m    |[0m[0m[;1m[35m                                      ^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[10 of 36] Compiling Network.MPD.Commands.Parse ( src/Network/MPD/Commands/Parse.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Parse.o )
+
+[;1msrc/Network/MPD/Commands/Parse.hs:15:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Control.Applicative’ is redundant
+      except perhaps to import instances from ‘Control.Applicative’
+    To import instances alone, use: import Control.Applicative()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m15 |[0m[0m [;1m[35mimport           Control.Applicative[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1msrc/Network/MPD/Commands/Parse.hs:16:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    Module ‘Control.Monad.Error’ is deprecated:
+      Use "Control.Monad.Except" instead[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m16 |[0m[0m [;1m[35mimport           Control.Monad.Error[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[11 of 36] Compiling Network.MPD.Commands.Query ( src/Network/MPD/Commands/Query.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Query.o )
+
+[;1msrc/Network/MPD/Commands/Query.hs:20:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Data.Monoid’ is redundant
+      except perhaps to import instances from ‘Data.Monoid’
+    To import instances alone, use: import Data.Monoid()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m20 |[0m[0m [;1m[35mimport           Data.Monoid[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[12 of 36] Compiling Network.MPD.Applicative.PlaybackControl ( src/Network/MPD/Applicative/PlaybackControl.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/PlaybackControl.o )
+[13 of 36] Compiling Network.MPD.Commands.PlaybackControl ( src/Network/MPD/Commands/PlaybackControl.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/PlaybackControl.o )
+[14 of 36] Compiling Network.MPD.Applicative.Output ( src/Network/MPD/Applicative/Output.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Output.o )
+[15 of 36] Compiling Network.MPD.Commands.Output ( src/Network/MPD/Commands/Output.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Output.o )
+[16 of 36] Compiling Network.MPD.Applicative.Util ( src/Network/MPD/Applicative/Util.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Util.o )
+[17 of 36] Compiling Network.MPD.Applicative.StoredPlaylists ( src/Network/MPD/Applicative/StoredPlaylists.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/StoredPlaylists.o )
+
+[;1msrc/Network/MPD/Applicative/StoredPlaylists.hs:35:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Control.Applicative’ is redundant
+      except perhaps to import instances from ‘Control.Applicative’
+    To import instances alone, use: import Control.Applicative()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m35 |[0m[0m [;1m[35mimport           Control.Applicative[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[18 of 36] Compiling Network.MPD.Commands.StoredPlaylists ( src/Network/MPD/Commands/StoredPlaylists.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/StoredPlaylists.o )
+[19 of 36] Compiling Network.MPD.Applicative.Stickers ( src/Network/MPD/Applicative/Stickers.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Stickers.o )
+
+[;1msrc/Network/MPD/Applicative/Stickers.hs:29:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Control.Applicative’ is redundant
+      except perhaps to import instances from ‘Control.Applicative’
+    To import instances alone, use: import Control.Applicative()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m29 |[0m[0m [;1m[35mimport           Control.Applicative[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[20 of 36] Compiling Network.MPD.Commands.Stickers ( src/Network/MPD/Commands/Stickers.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Stickers.o )
+[21 of 36] Compiling Network.MPD.Applicative.Status ( src/Network/MPD/Applicative/Status.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Status.o )
+
+[;1msrc/Network/MPD/Applicative/Status.hs:99:37: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtype-defaults[0m[0m[;1m][0m[0m[;1m
+    • Defaulting the following constraints to type ‘Double’
+        (Read a0)
+          arising from a use of ‘frac’
+          at src/Network/MPD/Applicative/Status.hs:99:37-111
+        (Fractional a0)
+          arising from a use of ‘frac’
+          at src/Network/MPD/Applicative/Status.hs:99:37-111
+        (RealFrac a0)
+          arising from a use of ‘round’
+          at src/Network/MPD/Applicative/Status.hs:99:84-90
+    • In the expression:
+        frac $ \ x -> a {stTime = fmap ((, round x) . fst) (stTime a)}
+      In a case alternative:
+          "duration"
+            -> frac $ \ x -> a {stTime = fmap ((, round x) . fst) (stTime a)}
+      In the expression:
+        case k of
+          "volume" -> vol $ \ x -> a {stVolume = x}
+          "repeat" -> bool $ \ x -> a {stRepeat = x}
+          "random" -> bool $ \ x -> a {stRandom = x}
+          "single" -> bool $ \ x -> a {stSingle = x}
+          "consume" -> bool $ \ x -> a {stConsume = x}
+          "playlist" -> num $ \ x -> a {stPlaylistVersion = x}
+          "playlistlength" -> num $ \ x -> a {stPlaylistLength = x}
+          "state" -> state $ \ x -> a {stState = x}
+          "song" -> int $ \ x -> a {stSongPos = Just x}
+          "songid" -> int $ \ x -> a {stSongID = Just $ Id x}
+          "nextsong" -> int $ \ x -> a {stNextSongPos = Just x}
+          "nextsongid" -> int $ \ x -> a {stNextSongID = Just $ Id x}
+          "time" -> time $ \ x -> a {stTime = Just x}
+          "elapsed" -> frac $ \ x -> a {stTime = fmap (... . snd) (stTime a)}
+          "duration"
+            -> frac $ \ x -> a {stTime = fmap (... . fst) (stTime a)}
+          "bitrate" -> int $ \ x -> a {stBitrate = Just x}
+          "xfade" -> num $ \ x -> a {stXFadeWidth = x}
+          "mixrampdb" -> frac $ \ x -> a {stMixRampdB = x}
+          "mixrampdelay" -> frac $ \ x -> a {stMixRampDelay = x}
+          "audio" -> audio $ \ x -> a {stAudio = x}
+          "updating_db" -> num $ \ x -> a {stUpdatingDb = Just x}
+          "error" -> Right a {stError = Just (UTF8.toString v)}
+          _ -> unexpectedPair[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m99 |[0m[0m                 "duration"       -> [;1m[35mfrac  $ \x -> a { stTime            = fmap ((, round x) . fst) (stTime a) }[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[22 of 36] Compiling Network.MPD.Commands.Status ( src/Network/MPD/Commands/Status.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Status.o )
+[23 of 36] Compiling Network.MPD.Applicative.Reflection ( src/Network/MPD/Applicative/Reflection.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Reflection.o )
+[24 of 36] Compiling Network.MPD.Commands.Reflection ( src/Network/MPD/Commands/Reflection.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Reflection.o )
+[25 of 36] Compiling Network.MPD.Applicative.PlaybackOptions ( src/Network/MPD/Applicative/PlaybackOptions.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/PlaybackOptions.o )
+[26 of 36] Compiling Network.MPD.Commands.PlaybackOptions ( src/Network/MPD/Commands/PlaybackOptions.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/PlaybackOptions.o )
+[27 of 36] Compiling Network.MPD.Applicative.Database ( src/Network/MPD/Applicative/Database.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/Database.o )
+
+[;1msrc/Network/MPD/Applicative/Database.hs:17:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Control.Applicative’ is redundant
+      except perhaps to import instances from ‘Control.Applicative’
+    To import instances alone, use: import Control.Applicative()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m17 |[0m[0m [;1m[35mimport           Control.Applicative[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[28 of 36] Compiling Network.MPD.Commands.Database ( src/Network/MPD/Commands/Database.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Database.o )
+[29 of 36] Compiling Network.MPD.Applicative.CurrentPlaylist ( src/Network/MPD/Applicative/CurrentPlaylist.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/CurrentPlaylist.o )
+[30 of 36] Compiling Network.MPD.Commands.CurrentPlaylist ( src/Network/MPD/Commands/CurrentPlaylist.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/CurrentPlaylist.o )
+
+[;1msrc/Network/MPD/Commands/CurrentPlaylist.hs:43:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    Module ‘Control.Monad.Error’ is deprecated:
+      Use "Control.Monad.Except" instead[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m43 |[0m[0m [;1m[35mimport           Control.Monad.Error (throwError)[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[31 of 36] Compiling Network.MPD.Applicative ( src/Network/MPD/Applicative.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative.o )
+[32 of 36] Compiling Network.MPD.Applicative.ClientToClient ( src/Network/MPD/Applicative/ClientToClient.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Applicative/ClientToClient.o )
+
+[;1msrc/Network/MPD/Applicative/ClientToClient.hs:28:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Control.Applicative’ is redundant
+      except perhaps to import instances from ‘Control.Applicative’
+    To import instances alone, use: import Control.Applicative()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m28 |[0m[0m [;1m[35mimport           Control.Applicative[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[33 of 36] Compiling Network.MPD.Commands.ClientToClient ( src/Network/MPD/Commands/ClientToClient.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/ClientToClient.o )
+[34 of 36] Compiling Network.MPD.Commands ( src/Network/MPD/Commands.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands.o )
+[35 of 36] Compiling Network.MPD.Commands.Extensions ( src/Network/MPD/Commands/Extensions.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD/Commands/Extensions.o )
+[36 of 36] Compiling Network.MPD      ( src/Network/MPD.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Network/MPD.o )
+Installing library in /home/josef/.stack/snapshots/x86_64-linux/lts-11.1/8.2.2/lib/x86_64-linux-ghc-8.2.2/libmpd-0.9.0.8-GxUFzIJgv0R8jRjMefWpD9
+Registering library for libmpd-0.9.0.8..

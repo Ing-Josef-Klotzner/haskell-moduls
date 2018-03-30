@@ -1,0 +1,43 @@
+Configuring c2hs-0.28.3...
+Preprocessing executable 'c2hs' for c2hs-0.28.3..
+Building executable 'c2hs' for c2hs-0.28.3..
+
+[;1m<no location info>: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wmissing-home-modules[0m[0m[;1m][0m[0m[;1m
+    These modules are needed for compilation but not listed in your .cabal file's other-modules: Paths_c2hs[0m[0m
+[0m[0m[0m[ 1 of 26] Compiling C2HS.C.Info      ( src/C2HS/C/Info.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/C/Info.o )
+[ 2 of 26] Compiling C2HS.Config      ( src/C2HS/Config.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/Config.o )
+[ 3 of 26] Compiling C2HS.Switches    ( src/C2HS/Switches.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/Switches.o )
+[ 4 of 26] Compiling Control.StateTrans ( src/Control/StateTrans.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Control/StateTrans.o )
+
+[;1msrc/Control/StateTrans.hs:80:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdodgy-imports[0m[0m[;1m][0m[0m[;1m
+    Module ‘Prelude’ does not export ‘catch’[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m80 |[0m[0m [;1m[35mimport Prelude hiding (catch)[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[ 5 of 26] Compiling Data.Errors      ( src/Data/Errors.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Data/Errors.o )
+[ 6 of 26] Compiling Data.Attributes  ( src/Data/Attributes.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Data/Attributes.o )
+[ 7 of 26] Compiling Control.StateBase ( src/Control/StateBase.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Control/StateBase.o )
+[ 8 of 26] Compiling Data.NameSpaces  ( src/Data/NameSpaces.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Data/NameSpaces.o )
+[ 9 of 26] Compiling C2HS.C.Attrs     ( src/C2HS/C/Attrs.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/C/Attrs.o )
+[10 of 26] Compiling C2HS.C.Builtin   ( src/C2HS/C/Builtin.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/C/Builtin.o )
+[11 of 26] Compiling Paths_c2hs       ( .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/autogen/Paths_c2hs.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Paths_c2hs.o )
+[12 of 26] Compiling C2HS.Version     ( src/C2HS/Version.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/Version.o )
+[13 of 26] Compiling System.CIO       ( src/System/CIO.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/System/CIO.o )
+[14 of 26] Compiling Control.State    ( src/Control/State.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Control/State.o )
+[15 of 26] Compiling C2HS.State       ( src/C2HS/State.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/State.o )
+[16 of 26] Compiling C2HS.C.Trav      ( src/C2HS/C/Trav.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/C/Trav.o )
+[17 of 26] Compiling C2HS.C.Names     ( src/C2HS/C/Names.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/C/Names.o )
+[18 of 26] Compiling C2HS.C           ( src/C2HS/C.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/C.o )
+[19 of 26] Compiling Text.Lexers      ( src/Text/Lexers.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Text/Lexers.o )
+[20 of 26] Compiling C2HS.CHS.Lexer   ( src/C2HS/CHS/Lexer.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/CHS/Lexer.o )
+[21 of 26] Compiling C2HS.CHS         ( src/C2HS/CHS.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/CHS.o )
+[22 of 26] Compiling C2HS.Gen.Monad   ( src/C2HS/Gen/Monad.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/Gen/Monad.o )
+[23 of 26] Compiling C2HS.Gen.Wrapper ( src/C2HS/Gen/Wrapper.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/Gen/Wrapper.o )
+[24 of 26] Compiling C2HS.Gen.Header  ( src/C2HS/Gen/Header.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/Gen/Header.o )
+[25 of 26] Compiling C2HS.Gen.Bind    ( src/C2HS/Gen/Bind.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/C2HS/Gen/Bind.o )
+[26 of 26] Compiling Main             ( src/Main.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs-tmp/Main.o )
+
+[;1m<no location info>: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wmissing-home-modules[0m[0m[;1m][0m[0m[;1m
+    These modules are needed for compilation but not listed in your .cabal file's other-modules: Paths_c2hs[0m[0m
+[0m[0m[0mLinking .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/c2hs/c2hs ...
+Installing executable c2hs in /home/josef/.stack/snapshots/x86_64-linux/lts-11.1/8.2.2/bin
