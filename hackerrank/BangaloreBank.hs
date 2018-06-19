@@ -4,6 +4,14 @@ import Control.Monad.State (State, get, gets, put, modify, evalState)
 import Data.Map (Map)
 import Data.List (elemIndex)
 import qualified Data.Map as M
+import qualified Data.Set as Set
+
+unique :: Ord a => [a] -> [a] 
+unique xs = go Set.empty xs where
+  go s (x:xs)
+   | x `Set.member` s = go s xs
+   | otherwise        = x : go (Set.insert x s) xs
+  go _ _              = []
 
 -- basic version plus looking 2 steps ahead -- even closer to correct result, but still wrong
 tmAcc [] = 0
@@ -130,6 +138,7 @@ tmAcc'' acc = go 2 (sKP 0) (sKP 1) 2 where
     cD p1 p2 = abs (p2 - p1)
 
 -- this solves problem, but is much tooooo slow   ---  n = 24 .. 21s  ... n = 10000 .. impossible
+--    with outerSpace                                  n = 24 .. <1s  
 tmAcc''' :: [Int] -> Int
 tmAcc''' [] = 0
 tmAcc''' acc
@@ -141,9 +150,14 @@ tmAcc''' acc = go 2 (sKP 0) (sKP gFR) 2 where
     go cP lKP rKP time
         | length acc == cP = time
     go cP lKP rKP time
+        | outerSpace = 
+            if cD lKP cKP < cD rKP cKP
+            then lr
+            else rr
         | lr < rr = lr
         | otherwise = rr
         where
+            outerSpace = elem cKP [1,2,9,0]
             lr = go (cP + 1) cKP rKP (time + clc + 1)
             rr = go (cP + 1) lKP cKP (time + crc + 1)
             clc = cD lKP cKP
@@ -196,7 +210,8 @@ getOrUpdate k ifEmptyState = do
             modify (M.insert k ifEmpty)
             return ifEmpty
 
--- memoized version of tmAcc'''  --- working, but still too slow  -- n = 648 .. 137s
+-- memoized version of tmAcc'''  --- working, but still too slow  -- n = 642 .. 137s
+           --           reduced with outerSpace to                   n = 642 .. 5 s
 tmAcM :: [Int] -> Int
 tmAcM [] = 0
 tmAcM acc
@@ -204,17 +219,23 @@ tmAcM acc
     | la == 2 = 2
     where
         la = length acc
-tmAcM acc = memoizeM go (2, (sKP 0), (sKP gFR), 2) where
+tmAcM acc = memoizeM go (1, (sKP 0), (sKP gFR), 1) where
     gFR = tmAFR $ take depth acc
-        where depth = 10
+        where depth = 100
     go :: Monad m => ((Int, Int, Int, Int) -> m Int) -> (Int, Int, Int, Int) -> m Int
     go f (cP, lKP, rKP, time)
         | cP == la = return time
-    go f (cP, lKP, rKP, time) = do
-        lr <- mlr
-        rr <- mrr
-        if lr < rr then mlr else mrr
+    go f (cP, lKP, rKP, time) 
+        | outerSpace =
+            if cD lKP cKP < cD rKP cKP
+            then mlr
+            else mrr
+        | otherwise = do
+            lr <- mlr
+            rr <- mrr
+            if lr < rr then mlr else mrr
         where
+            outerSpace = elem cKP [1,2,9,0]
             mlr = f ((cP + 1), cKP, rKP, (time + clc + 1))
             mrr = f ((cP + 1), lKP, cKP, (time + crc + 1))
             clc = cD lKP cKP
@@ -239,11 +260,17 @@ tmAcP kBPL lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
                     -> (Int, Int, Int, Int, Int) -> m (Int, Int)
     go f (cP, lKP, rKP, time, liSm)
         | cP == la = return (time, liSm)
-    go f (cP, lKP, rKP, time, liSm) = do
-        lr <- mlr
-        rr <- mrr
-        if fst lr < fst rr then mlr else mrr
+    go f (cP, lKP, rKP, time, liSm)
+        | outerSpace =
+            if cD lKP cKP < cD rKP cKP
+            then mlr
+            else mrr
+        | otherwise = do
+            lr <- mlr
+            rr <- mrr
+            if lr < rr then mlr else mrr
         where
+            outerSpace = elem cKP [1,2,9,0]
             mlr = f ((cP + 1), cKP, rKP, (time + clc + 1), lBr)
             mrr = f ((cP + 1), lKP, cKP, (time + crc + 1), rBr)
             lBr = if liSm == (-1) then 1 else liSm
@@ -267,7 +294,8 @@ tmAcR' kBPL
     | length kBPL == 2 = 2
 tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
     gFR = tmAFR $ take depth kBPL
-        where depth = 10
+        where depth = 100
+--    gFR = tmAFR kBPL
     go cP lKP rKP time
         | length kBPL == cP = time
     go cP lKP rKP time
@@ -289,23 +317,35 @@ tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
 
 -- previous variant of memoized tmAcM, with already converted account list
 --used to get best first right finger position on keyboard (rKP)
-tmAFR acc = tmAFR_ (cvtToKbL acc) where
-    cvtToKbL = map kBP
-    kBP 0 = 9
-    kBP n = n - 1
-tmAFR_ kBPL = go 1 1 100000000 where
+--tmAFR acc = tmAFR_ (cvtToKbL acc) where
+--    cvtToKbL = map kBP
+--    kBP 0 = 9
+--    kBP n = n - 1
+tmAFR kBPL = go 0 0 100000000 where
+    ukBPL = unique kBPL
+    pNB = filter (/= (kBPL !! 0)) ukBPL   -- possible next best
+--    pNB = filter (`elem` notOuterSpaceL) btwn
+--    notOuterSpaceL = [4,5,6,7]
     go idx min_idx min_cost
-        | idx < la = go (idx + 1) new_min_idx new_min_cost
-        | otherwise = min_idx
+        | idx < lu = go (idx + 1) new_min_idx new_min_cost
+        | otherwise = unjust $ elemIndex (pNB !! min_idx) kBPL
         where 
-            la = length kBPL
+            unjust (Just x) = x
+            unjust Nothing = 0
+            lu = length pNB
             -- use memoization !
-            cost = tmAFR' kBPL idx
+            cost = tmAFR' kBPL (unjust $ elemIndex (pNB !! idx) kBPL)
             -- find Index for right position with Minimum step cost
             new_min_cost = if new_min_c then cost else min_cost
             new_min_idx = if new_min_c then idx else min_idx
             new_min_c = cost < min_cost
-
+{--
+  1 2 3 4 5 6 7 8 9 0
+outer | between | outer
+      3   bis   8
+-- If new position is in outer space (see above) - the cursor that is closer
+-- has to move - positions can not swap.
+--}
 -- return time for certain right finger position (idx)
 tmAFR' :: [Int] -> Int -> Int
 tmAFR' [] idx = 0
@@ -314,16 +354,21 @@ tmAFR' kBPL idx = memoizeM go (1, (kBPL !! 0), (kBPL !! idx), 1) where
                     -> (Int, Int, Int, Int) -> m Int
     go f (cP, lKP, rKP, time)
         | cP == la = return time
-    go f (cP, lKP, rKP, time) =
-        if cP > idx
-        then do
+    go f (cP, lKP, rKP, time)
+        | cP > idx && not outerSpace = do
             lr <- mlr
             rr <- mrr
             if lr < rr then mlr else mrr
-        else if cP == idx
-            then f (cP + 1, lKP, cKP, time + 1)
-            else f (cP + 1, cKP, rKP, time + clc + 1)
+        | cP > idx && outerSpace =
+            if cD lKP cKP < cD rKP cKP
+            then f (cP + 1, cKP, rKP, time + clc + 1)
+            else f (cP + 1, lKP, cKP, time + crc + 1)
+        | cP == idx = 
+            f (cP + 1, lKP, cKP, time + 1)
+        | otherwise =
+            f (cP + 1, cKP, rKP, time + clc + 1)
         where
+            outerSpace = elem cKP [1,2,9,0]
             mlr = f (cP + 1, cKP, rKP, time + clc + 1)
             mrr = f (cP + 1, lKP, cKP, time + crc + 1)
             clc = cD lKP cKP
@@ -346,11 +391,43 @@ tmAFRL acc = tmAFRL_ (cvtToKbL acc) where
     cvtToKbL = map kBP
     kBP 0 = 9
     kBP n = n - 1
+tmAFRL_ :: [Int] -> Int
 tmAFRL_ kBPL = (unjust $ ix $ map (tmAFRL' kBPL) (drop 1 kBPL)) + 1
     where
     unjust (Just x) = x
     unjust Nothing = 0
     ix x = elemIndex (minimum x) x
+
+-- pack call from above to function below to get first best right finger position on keyboard
+-- no: better: just search with possible next best (0-9 without lKP) instead of searching again and again
+-- same numbers with rest of whole list
+-- rKP initially set to 2nd acc (kBPL) position, searching for better one
+tmAFRLM :: [Int] -> Int
+tmAFRLM kBPL = memoizeM go (0, (kBPL !! 0), (kBPL !! 1), 0) where
+    unjust (Just x) = x
+    unjust Nothing = 0
+    ix x = elemIndex (minimum x) x
+    ukBPL = unique kBPL
+    pNB = filter (/= (kBPL !! 0)) ukBPL   -- possible next best
+    -- get list of possible next best (filter (/= (kBPL !! 0)) $ unique kBPL)
+    -- go with each pNB finding smallest time
+    go :: Monad m => ((Int, Int, Int, Int) -> m Int) 
+                    -> (Int, Int, Int, Int) -> m Int
+    go f (cP, lKP, rKP, time)
+        | cP == la = return time
+    go f (cP, lKP, rKP, time) = do
+        lr <- mlr
+        rr <- mrr
+        if lr < rr then mlr else mrr
+        where
+            mlr = f ((cP + 1), cKP, rKP, (time + clc + 1))
+            mrr = f ((cP + 1), lKP, cKP, (time + crc + 1))
+            clc = cD lKP cKP
+            crc = cD rKP cKP
+            cKP = kBPL !! cP
+    la = length kBPL
+    -- calculate difference on keyboard
+    cD p1 p2 = abs (p2 - p1)
 
 -- return time for certain right finger position
 tmAFRL' :: [Int] -> Int -> Int
@@ -404,14 +481,15 @@ main = do
 
 --452
 --3 3 7 4 3 1 2 0 1 3 4 8 0 1 9 3 6 8 7 4 7 6 4 2 9 3 7 2 9 9 1 7 6 8 8 5 6 1 6 3 7 2 9 3 5 9 3 3 6 5 9 9 4 4 3 8 2 4 8 1 2 4 1 5 4 3 0 1 9 3 2 4 1 2 8 4 0 2 8 7 6 3 9 2 4 0 9 6 2 4 1 5 6 4 6 7 5 1 0 2 6 2 2 7 8 7 1 2 0 8 4 0 1 4 9 0 5 6 9 8 6 6 0 1 4 4 2 4 9 3 6 3 1 4 0 3 7 5 6 2 3 4 6 2 0 5 7 4 6 4 1 3 2 4 9 4 8 9 9 3 2 3 8 4 2 9 8 1 9 2 5 0 9 7 2 6 2 6 4 5 7 5 5 5 8 2 6 8 8 5 6 6 5 3 6 1 5 0 6 1 5 8 6 8 3 7 2 3 9 3 0 5 3 4 2 3 3 3 7 4 3 1 2 0 1 3 3 3 7 4 3 1 2 0 1 3 4 8 0 1 9 3 6 8 7 4 7 6 4 2 9 3 7 2 9 9 1 7 6 8 8 5 6 1 6 3 7 2 9 3 5 9 3 3 6 5 9 9 4 4 3 8 2 4 8 1 2 4 1 5 4 3 0 1 9 3 2 4 1 2 8 4 0 2 8 7 6 3 9 2 4 0 9 6 2 4 1 5 6 4 6 7 5 1 0 2 6 2 2 7 8 7 1 2 0 8 4 0 1 4 9 0 5 6 9 8 6 6 0 1 4 4 2 4 9 3 6 3 1 4 0 3 7 5 6 2 3 4 6 2 0 5 7 4 6 4 1 3 2 4 9 4 8 9 9 3 2 3 8 4 2 9 8 1 9 2 5 0 9 7 2 6 2 6 4 5 7 5 5 5 8 2 6 8 8 5 6 6 5 3 6 1 5 0 6 1 5 8 6 8 3 7 2 3 9 3 0 5 3 4 2 3 3 3 7 4 3 1 2 0 1 3
---1117
+--1113
 -- ... 50 s with tmAcM
+--     5 s with outerSpace improvement
 
 --678
 --3 3 7 4 3 1 2 0 1 3 4 8 0 1 9 3 6 8 7 4 7 6 4 2 9 3 7 2 9 9 1 7 6 8 8 5 6 1 6 3 7 2 9 3 5 9 3 3 6 5 9 9 4 4 3 8 2 4 8 1 2 4 1 5 4 3 0 1 9 3 2 4 1 2 8 4 0 2 8 7 6 3 9 2 4 0 9 6 2 4 1 5 6 4 6 7 5 1 0 2 6 2 2 7 8 7 1 2 0 8 4 0 1 4 9 0 5 6 9 8 6 6 0 1 4 4 2 4 9 3 6 3 1 4 0 3 7 5 6 2 3 4 6 2 0 5 7 4 6 4 1 3 2 4 9 4 8 9 9 3 2 3 8 4 2 9 8 1 9 2 5 0 9 7 2 6 2 6 4 5 7 5 5 5 8 2 6 8 8 5 6 6 5 3 6 1 5 0 6 1 5 8 6 8 3 7 2 3 9 3 0 5 3 4 2 3 3 3 7 4 3 1 2 0 1 3 3 3 7 4 3 1 2 0 1 3 4 8 0 1 9 3 6 8 7 4 7 6 4 2 9 3 7 2 9 9 1 7 6 8 8 5 6 1 6 3 7 2 9 3 5 9 3 3 6 5 9 9 4 4 3 8 2 4 8 1 2 4 1 5 4 3 0 1 9 3 2 4 1 2 8 4 0 2 8 7 6 3 9 2 4 0 9 6 2 4 1 5 6 4 6 7 5 1 0 2 6 2 2 7 8 7 1 2 0 8 4 0 1 4 9 0 5 6 9 8 6 6 0 1 4 4 2 4 9 3 6 3 1 4 0 3 7 5 6 2 3 4 6 2 0 5 7 4 6 4 1 3 2 4 9 4 8 9 9 3 2 3 8 4 2 9 8 1 9 2 5 0 9 7 2 6 2 6 4 5 7 5 5 5 8 2 6 8 8 5 6 6 5 3 6 1 5 0 6 1 5 8 6 8 3 7 2 3 9 3 0 5 3 4 2 3 3 3 7 4 3 1 2 0 1 3 3 3 7 4 3 1 2 0 1 3 4 8 0 1 9 3 6 8 7 4 7 6 4 2 9 3 7 2 9 9 1 7 6 8 8 5 6 1 6 3 7 2 9 3 5 9 3 3 6 5 9 9 4 4 3 8 2 4 8 1 2 4 1 5 4 3 0 1 9 3 2 4 1 2 8 4 0 2 8 7 6 3 9 2 4 0 9 6 2 4 1 5 6 4 6 7 5 1 0 2 6 2 2 7 8 7 1 2 0 8 4 0 1 4 9 0 5 6 9 8 6 6 0 1 4 4 2 4 9 3 6 3 1 4 0 3 7 5 6 2 3 4 6 2 0 5 7 4 6 4 1 3 2 4 9 4 8 9 9 3 2 3 8 4 2 9 8 1 9 2 5 0 9 7 2 6 2 6 4 5 7 5 5 5 8 2 6 8 8 5 6 6 5 3 6 1 5 0 6 1 5 8 6 8 3 7 2 3 9 3 0 5 3 4 2 3 3 3 7 4 3 1 2 0 1 3
---1675
+--1671
 -- ... 137 s with tmAcM
-
+--      11 s with outerSpace improvement
 --22
 --1 9 4 2 5 3 6 4 7 5 8 6 9 0 1 9 4 2 5 3 6 4
 --54
@@ -438,7 +516,7 @@ main = do
 --42
 -- ... 45 s with tmAcc''', ~ time * 3 for every additional digit !!!
 
---1
+--18
 --1 9 4 2 5 3 6 4 7 5 8 6 9 0 1 9 4 2
 --45
 -- .. 130 s with tmAcc''', ~ time * 3 for every additional digit !!!
