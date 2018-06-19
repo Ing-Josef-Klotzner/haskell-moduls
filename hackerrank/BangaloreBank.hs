@@ -2,6 +2,7 @@ module Main where
 import Control.Monad
 import Control.Monad.State (State, get, gets, put, modify, evalState)
 import Data.Map (Map)
+import Data.List (elemIndex)
 import qualified Data.Map as M
 
 -- basic version plus looking 2 steps ahead -- even closer to correct result, but still wrong
@@ -59,7 +60,8 @@ tmAcc acc = go 2 (sKP 0) (sKP 1) 2 where
     la = length acc
     -- set keyboardpointer
     sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
+        | otherwise = 9
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
@@ -97,7 +99,8 @@ tmAcc' acc = go 2 (sKP 0) (sKP 1) 2 where
     la = length acc
     -- set keyboardpointer
     sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
+        | otherwise = 9
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
@@ -121,17 +124,20 @@ tmAcc'' acc = go 2 (sKP 0) (sKP 1) 2 where
     la = length acc
     -- set keyboardpointer
     sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
+        | otherwise = 9
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
 -- this solves problem, but is much tooooo slow   ---  n = 24 .. 21s  ... n = 10000 .. impossible
-tmAcc''' :: (Num a, Ord a) => [a] -> a
+tmAcc''' :: [Int] -> Int
 tmAcc''' [] = 0
 tmAcc''' acc
     | length acc < 2 = 1
     | length acc == 2 = 2
-tmAcc''' acc = go 2 (sKP 0) (sKP 1) 2 where
+tmAcc''' acc = go 2 (sKP 0) (sKP gFR) 2 where
+    gFR = tmAFR $ take depth acc
+        where depth = 10
     go cP lKP rKP time
         | length acc == cP = time
     go cP lKP rKP time
@@ -146,7 +152,8 @@ tmAcc''' acc = go 2 (sKP 0) (sKP 1) 2 where
     la = length acc
     -- set keyboardpointer
     sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
+        | otherwise = 9
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
@@ -174,7 +181,8 @@ tmAccM' acc = go 2 (sKP 0) (sKP 1) 2 where
     la = length acc
     -- set keyboardpointer
     sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
+        | otherwise = 9
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
@@ -196,7 +204,9 @@ tmAcM acc
     | la == 2 = 2
     where
         la = length acc
-tmAcM acc = memoizeM go (2, (sKP 0), (sKP 1), 2) where
+tmAcM acc = memoizeM go (2, (sKP 0), (sKP gFR), 2) where
+    gFR = tmAFR $ take depth acc
+        where depth = 10
     go :: Monad m => ((Int, Int, Int, Int) -> m Int) -> (Int, Int, Int, Int) -> m Int
     go f (cP, lKP, rKP, time)
         | cP == la = return time
@@ -213,16 +223,18 @@ tmAcM acc = memoizeM go (2, (sKP 0), (sKP 1), 2) where
     la = length acc
     -- set keyboardpointer
     sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
+        | otherwise = 9
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
--- variant of memoized tmAcM
+-- --------------------------------------------------------------------------------------------------
+-- previous variant of memoized tmAcM, converted acc to list of keyboard positions
 --used in tmAcR to check next part of account number (depth) to get next best step
 --liSm = 1  means left is smaller
 tmAcP :: [Int] -> Int -> Int -> (Int, Int)
 tmAcP [] lKP rKP = (0, 0)
-tmAcP acc lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
+tmAcP kBPL lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
     go :: Monad m => ((Int, Int, Int, Int, Int) -> m (Int, Int)) 
                     -> (Int, Int, Int, Int, Int) -> m (Int, Int)
     go f (cP, lKP, rKP, time, liSm)
@@ -238,43 +250,131 @@ tmAcP acc lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
             rBr = if liSm == (-1) then 0 else liSm
             clc = cD lKP cKP
             crc = cD rKP cKP
-            cKP = sKP cP
-    la = length acc
-    -- set keyboardpointer
-    sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+            cKP = kBPL !! cP
+    la = length kBPL
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
--- variant of tmAcc''', which uses tmAcM for search with depth d to decide next step
-tmAcR :: [Int] -> Int
-tmAcR [] = 0
-tmAcR acc
-    | length acc < 2 = 1
-    | length acc == 2 = 2
-tmAcR acc = go 2 (sKP 0) (sKP 1) 2 where
+-- previous variant of tmAcc''', which uses tmAcP for search with depth d to decide next step
+tmAcR acc = tmAcR' (cvtToKbL acc) where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
+tmAcR' :: [Int] -> Int
+tmAcR' [] = 0
+tmAcR' kBPL
+    | length kBPL < 2 = 1
+    | length kBPL == 2 = 2
+tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
+    gFR = tmAFR $ take depth kBPL
+        where depth = 10
     go cP lKP rKP time
-        | length acc == cP = time
+        | length kBPL == cP = time
     go cP lKP rKP time
         | if lOK then left else lr < rr = lr
         | otherwise = rr
         where
             depth = 10
             lOK = la > (2 + depth)
-            left = (snd $ tmAcP accP lKP rKP) == 1
-            accP = drop cP $ take (cP + depth) acc
+            left = (snd $ tmAcP kBPLP lKP rKP) == 1
+            kBPLP = drop cP $ take (cP + depth) kBPL
             lr = go (cP + 1) cKP rKP (time + clc + 1)
             rr = go (cP + 1) lKP cKP (time + crc + 1)
             clc = cD lKP cKP
             crc = cD rKP cKP
-            cKP = sKP cP
-    la = length acc
-    -- set keyboardpointer
-    sKP ptr 
-        | ptr < la = if acc !! ptr <= 9 && acc !! ptr > 0 then acc !! ptr - 1 else 9
+            cKP = kBPL !! cP
+    la = length kBPL
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1) 
 
+-- previous variant of memoized tmAcM, with already converted account list
+--used to get best first right finger position on keyboard (rKP)
+tmAFR acc = tmAFR_ (cvtToKbL acc) where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
+tmAFR_ kBPL = go 1 1 100000000 where
+    go idx min_idx min_cost
+        | idx < la = go (idx + 1) new_min_idx new_min_cost
+        | otherwise = min_idx
+        where 
+            la = length kBPL
+            -- use memoization !
+            cost = tmAFR' kBPL idx
+            -- find Index for right position with Minimum step cost
+            new_min_cost = if new_min_c then cost else min_cost
+            new_min_idx = if new_min_c then idx else min_idx
+            new_min_c = cost < min_cost
+
+-- return time for certain right finger position (idx)
+tmAFR' :: [Int] -> Int -> Int
+tmAFR' [] idx = 0
+tmAFR' kBPL idx = memoizeM go (1, (kBPL !! 0), (kBPL !! idx), 1) where
+    go :: Monad m => ((Int, Int, Int, Int) -> m Int) 
+                    -> (Int, Int, Int, Int) -> m Int
+    go f (cP, lKP, rKP, time)
+        | cP == la = return time
+    go f (cP, lKP, rKP, time) =
+        if cP > idx
+        then do
+            lr <- mlr
+            rr <- mrr
+            if lr < rr then mlr else mrr
+        else if cP == idx
+            then f (cP + 1, lKP, cKP, time + 1)
+            else f (cP + 1, cKP, rKP, time + clc + 1)
+        where
+            mlr = f (cP + 1, cKP, rKP, time + clc + 1)
+            mrr = f (cP + 1, lKP, cKP, time + crc + 1)
+            clc = cD lKP cKP
+            crc = cD rKP cKP
+            cKP = kBPL !! cP
+    la = length kBPL
+    -- calculate difference on keyboard
+    cD p1 p2 = abs (p2 - p1)
+
+-- test output of list with sums of steps of each right finger position
+tmAFRL'' acc = map (tmAFRL' (cvtToKbL acc)) (drop 1 acc)
+    where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
+
+-- variant of memoized tmAcM
+--used to get best first right finger position on keyboard (rKP)
+tmAFRL acc = tmAFRL_ (cvtToKbL acc) where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
+tmAFRL_ kBPL = (unjust $ ix $ map (tmAFRL' kBPL) (drop 1 kBPL)) + 1
+    where
+    unjust (Just x) = x
+    unjust Nothing = 0
+    ix x = elemIndex (minimum x) x
+
+-- return time for certain right finger position
+tmAFRL' :: [Int] -> Int -> Int
+tmAFRL' [] rKP = 0
+tmAFRL' kBPL rKP = memoizeM go (0, (kBPL !! 0), rKP, 0) where
+    go :: Monad m => ((Int, Int, Int, Int) -> m Int) 
+                    -> (Int, Int, Int, Int) -> m Int
+    go f (cP, lKP, rKP, time)
+        | cP == la = return time
+    go f (cP, lKP, rKP, time) = do
+        lr <- mlr
+        rr <- mrr
+        if lr < rr then mlr else mrr
+        where
+            mlr = f ((cP + 1), cKP, rKP, (time + clc + 1))
+            mrr = f ((cP + 1), lKP, cKP, (time + crc + 1))
+            clc = cD lKP cKP
+            crc = cD rKP cKP
+            cKP = kBPL !! cP
+    la = length kBPL
+    -- calculate difference on keyboard
+    cD p1 p2 = abs (p2 - p1)
+
+-- 
 type StateMap a b = State (Map a b) b
 
 memoizeM :: (Show a, Show b, Ord a) => 
@@ -289,26 +389,12 @@ memoizeM t x = evalState (fn x) M.empty where
 --    return $ trace ("Map now contains\n" ++ M.showTree newM) y
   fn x = get >>= \m -> maybe (g x) return (M.lookup x m)
 
-
--- 2nd new approach
--- 1st intitial error: it is NOT (always) the best to set left on 1 and right on 2 
--- .. so change this and change algorithm generally to:
--- instead of thinking what is next best step  left or right,
--- better set left (or right if lower cost from last position, if it is not initial step) and
--- (*) decide (how?) by looking ahead x (?)
--- positions, WHERE to set right (or left) next best
--- follow up summing the cost of steps with left until position of right by simply comparing that cost
--- is still cheaper than doing step with right, if not, right is reached and prints its digit, then
--- repeat again from (*) by deciding next best position for left 
-
-
-
 main :: IO()
 main = do
     n <- readLn :: IO Int
     scoreTemp <- getLine
     let account = map (read :: String -> Int) . words $ scoreTemp
-    let result = tmAcc''' account
+    let result = tmAcR account
     putStrLn $ show result
 
 --216 Stellen
