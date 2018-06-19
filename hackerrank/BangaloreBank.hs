@@ -138,7 +138,7 @@ tmAcc'' acc = go 2 (sKP 0) (sKP 1) 2 where
     cD p1 p2 = abs (p2 - p1)
 
 -- this solves problem, but is much tooooo slow   ---  n = 24 .. 21s  ... n = 10000 .. impossible
---    with outerSpace                                  n = 24 .. <1s  
+--    with outerSpace                                  n = 24 .. 2s  
 tmAcc''' :: [Int] -> Int
 tmAcc''' [] = 0
 tmAcc''' acc
@@ -146,7 +146,7 @@ tmAcc''' acc
     | length acc == 2 = 2
 tmAcc''' acc = go 2 (sKP 0) (sKP gFR) 2 where
     gFR = tmAFR $ take depth acc
-        where depth = 10
+        where depth = 30
     go cP lKP rKP time
         | length acc == cP = time
     go cP lKP rKP time
@@ -157,7 +157,7 @@ tmAcc''' acc = go 2 (sKP 0) (sKP gFR) 2 where
         | lr < rr = lr
         | otherwise = rr
         where
-            outerSpace = elem cKP [1,2,9,0]
+            outerSpace = elem cKP [0,1,8,9]
             lr = go (cP + 1) cKP rKP (time + clc + 1)
             rr = go (cP + 1) lKP cKP (time + crc + 1)
             clc = cD lKP cKP
@@ -221,7 +221,7 @@ tmAcM acc
         la = length acc
 tmAcM acc = memoizeM go (1, (sKP 0), (sKP gFR), 1) where
     gFR = tmAFR $ take depth acc
-        where depth = 100
+        where depth = 30
     go :: Monad m => ((Int, Int, Int, Int) -> m Int) -> (Int, Int, Int, Int) -> m Int
     go f (cP, lKP, rKP, time)
         | cP == la = return time
@@ -235,7 +235,7 @@ tmAcM acc = memoizeM go (1, (sKP 0), (sKP gFR), 1) where
             rr <- mrr
             if lr < rr then mlr else mrr
         where
-            outerSpace = elem cKP [1,2,9,0]
+            outerSpace = elem cKP [0,1,8,9]
             mlr = f ((cP + 1), cKP, rKP, (time + clc + 1))
             mrr = f ((cP + 1), lKP, cKP, (time + crc + 1))
             clc = cD lKP cKP
@@ -270,7 +270,7 @@ tmAcP kBPL lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
             rr <- mrr
             if lr < rr then mlr else mrr
         where
-            outerSpace = elem cKP [1,2,9,0]
+            outerSpace = elem cKP [0,1,8,9]
             mlr = f ((cP + 1), cKP, rKP, (time + clc + 1), lBr)
             mrr = f ((cP + 1), lKP, cKP, (time + crc + 1), rBr)
             lBr = if liSm == (-1) then 1 else liSm
@@ -294,7 +294,7 @@ tmAcR' kBPL
     | length kBPL == 2 = 2
 tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
     gFR = tmAFR $ take depth kBPL
-        where depth = 100
+        where depth = 30
 --    gFR = tmAFR kBPL
     go cP lKP rKP time
         | length kBPL == cP = time
@@ -302,7 +302,7 @@ tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
         | if lOK then left else lr < rr = lr
         | otherwise = rr
         where
-            depth = 10
+            depth = 12
             lOK = la > (2 + depth)
             left = (snd $ tmAcP kBPLP lKP rKP) == 1
             kBPLP = drop cP $ take (cP + depth) kBPL
@@ -368,7 +368,7 @@ tmAFR' kBPL idx = memoizeM go (1, (kBPL !! 0), (kBPL !! idx), 1) where
         | otherwise =
             f (cP + 1, cKP, rKP, time + clc + 1)
         where
-            outerSpace = elem cKP [1,2,9,0]
+            outerSpace = elem cKP [0,1,8,9]
             mlr = f (cP + 1, cKP, rKP, time + clc + 1)
             mrr = f (cP + 1, lKP, cKP, time + crc + 1)
             clc = cD lKP cKP
