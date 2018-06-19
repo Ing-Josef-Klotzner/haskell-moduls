@@ -1,12 +1,25 @@
-import Control.Monad (forM)
+import Control.Monad (forM, forM_)
+import Data.List (intercalate)
 
+factorial :: Int -> Integer
+factorial 0 = 1
+factorial n = (scanl (*) 1 [2..]) !! (n - 1)
+
+factorial' :: Int -> Integer
+factorial' = product . flip take [1..]
+
+f = factorial'
+
+-- C(n,k)=n!/(k!(n−k)!) 
+cnt (n, k) = f n `div` (f k * f (n - k)) `mod` (10^8+7)
 
 main :: IO()
 main = do
-    n <- fmap (read :: String -> Int) getLine
-    ft <- forM [1..n] (\_ -> do fmap (map (read :: String -> Double).words) getLine)
+    t <- fmap (read :: String -> Int) getLine
+    nkL <- forM [1..t] (\_ -> do fmap (map (read :: String -> Int).words) getLine)
     
-    print ft
+    putStrLn $ intercalate "\n" $ map (\[n,k] -> show (cnt (n, k))) $ nkL
+
 
 
 --Input 
