@@ -152,11 +152,11 @@ tmAcc'2 kBPL
     | length kBPL == 2 = ([],2)
 tmAcc'2 kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 [(kBPL !! 0, "l", kBPL !! 0)] where
     gFR = tmAFR $ take depth kBPL
-        where depth = 30
+        where depth = 50
     go cP lKP rKP time rL
         | la == cP = (rL, time)
     go cP lKP rKP time rL
-        | gFR > cKP = go (cP + 1) cKP rKP (time + clc + 1) (rL ++ [(lKP, "l", cKP)])
+        | gFR > cP = go (cP + 1) cKP rKP (time + clc + 1) (rL ++ [(lKP, "l", cKP)])
         | clc < crc = go (cP + 1) cKP rKP (time + clc + 1) (rL ++ [(lKP, "l", cKP)])
         | otherwise = go (cP + 1) lKP cKP (time + crc + 1) (rL ++ [(rKP, "r", cKP)])
         where
@@ -169,35 +169,34 @@ tmAcc'2 kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 [(kBPL !! 0, "l", kBPL !! 0)] wh
 
 -- this solves problem, but is much tooooo slow   ---  n = 24 .. 21s  ... n = 10000 .. impossible
 --    with outerSpace                                  n = 24 .. 2s  
+tmAc3 acc = tmAcc''' (cvtToKbL acc) where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
+    
 tmAcc''' :: [Int] -> Int
 tmAcc''' [] = 0
-tmAcc''' acc
-    | length acc < 2 = 1
-    | length acc == 2 = 2
-tmAcc''' acc = go 2 (sKP 0) (sKP gFR) 2 where
-    gFR = tmAFR $ take depth acc
-        where depth = 30
+tmAcc''' kBPL 
+    | length kBPL < 2 = 1
+    | length kBPL == 2 = 2
+tmAcc''' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
+    gFR = tmAFR $ take depth kBPL
+        where depth = 50            -- das mit depth muss nach Möglichkeit raus, wenn schnell genug
     go cP lKP rKP time
-        | length acc == cP = time
+        | la == cP = time
     go cP lKP rKP time
-        | outerSpace = 
-            if clc < crc
-            then lr
-            else rr
+        | gFR > cP = lr     -- get to pointer to account number of right finger when starting
+        | rKP > lKP && cKP <= lKP || rKP < lKP && cKP >= lKP = lr   -- outerSpace optimization
+        | rKP > lKP && cKP >= rKP || rKP < lKP && cKP <= rKP = rr   -- outerSpace optimization
         | lr < rr = lr
         | otherwise = rr
         where
-            outerSpace = elem cKP [0, 9]
             lr = go (cP + 1) cKP rKP (time + clc + 1)
             rr = go (cP + 1) lKP cKP (time + crc + 1)
             clc = cD lKP cKP
             crc = cD rKP cKP
-            cKP = sKP cP
-    la = length acc
-    -- set keyboardpointer
-    sKP ptr 
-        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
-        | otherwise = 9
+            cKP = kBPL !! cP
+    la = length kBPL
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
@@ -217,21 +216,19 @@ tmAcM' kBPL
         la = length kBPL
 tmAcM' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1) where
     gFR = tmAFR $ take depth kBPL
-        where depth = 30
+        where depth = 50
     go :: Monad m => ((Int, Int, Int, Int) -> m Int) -> (Int, Int, Int, Int) -> m Int
     go f (cP, lKP, rKP, time)
         | cP == la = return time
     go f (cP, lKP, rKP, time) 
-        | outerSpace =
-            if clc < crc
-            then mlr
-            else mrr
+        | gFR > cP = mlr
+        | rKP > lKP && cKP <= lKP || rKP < lKP && cKP >= lKP = mlr   -- outerSpace optimization
+        | rKP > lKP && cKP >= rKP || rKP < lKP && cKP <= rKP = mrr   -- outerSpace optimization
         | otherwise = do
             lr <- mlr
             rr <- mrr
             if lr < rr then mlr else mrr
         where
-            outerSpace = elem cKP [0, 9]
             mlr = f ((cP + 1), cKP, rKP, (time + clc + 1))
             mrr = f ((cP + 1), lKP, cKP, (time + crc + 1))
             clc = cD lKP cKP
@@ -250,7 +247,7 @@ tmAcM''' kBPL
         la = length kBPL
 tmAcM''' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1,14, True) where
     gFR = tmAFR $ take depth kBPL
-        where depth = 30
+        where depth = 50
     go :: Monad m => ((Int, Int, Int, Int, Int, Bool) -> m Int) -> (Int, Int, Int, Int, Int, Bool) -> m Int
     go f (cP, lKP, rKP, time, dep, mains)
         | cP == la && not mains || not mains && dep <= 0 = return time
@@ -293,22 +290,22 @@ tmAcM'' kBPL
     | la == 2 = ([], 2)
     where
         la = length kBPL
+
 tmAcM'' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1, [(kBPL !! 0, "l", kBPL !! 0)]) where
     gFR = tmAFR $ take depth kBPL
-        where depth = 30
+        where depth = 50
     go :: Monad m => ((Int, Int, Int, Int, [(Int, String, Int)]) -> m ([(Int, String, Int)], Int)) 
                     -> (Int, Int, Int, Int, [(Int, String, Int)]) -> m ([(Int, String, Int)], Int)
     go f (cP, lKP, rKP, time, rL)
         | cP == la = return (rL, time)
     go f (cP, lKP, rKP, time, rL) 
-        | outerSpace =
-            if clc < crc
-            then mlr
-            else mrr
+        | gFR > cP = mlr
+        | rKP > lKP && cKP <= lKP || rKP < lKP && cKP >= lKP = mlr   -- outerSpace optimization
+        | rKP > lKP && cKP >= rKP || rKP < lKP && cKP <= rKP = mrr   -- outerSpace optimization
         | otherwise = do
             lr <- mlr
             rr <- mrr
-            if lr < rr then mlr else mrr
+            if snd lr < snd rr then mlr else mrr
         where
             outerSpace = elem cKP [0, 9]
             mlr = f (cP + 1, cKP, rKP, time + clc + 1, rL ++ [(lKP, "l", cKP)])
@@ -333,16 +330,13 @@ tmAcP kBPL lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
         | cP == la = return (time, liSm)
     go f (cP, lKP, rKP, time, liSm)
         -- Optimierung
-        | outerSpace =
-            if clc < crc
-            then mlr
-            else mrr
+        | rKP > lKP && cKP >= rKP || rKP < lKP && cKP <= rKP = mrr   -- outerSpace optimization
+        | rKP > lKP && cKP <= lKP || rKP < lKP && cKP >= lKP = mlr   -- outerSpace optimization
         | otherwise = do
             lr <- mlr
             rr <- mrr
             if lr < rr then mlr else mrr
         where
-            outerSpace = elem cKP [0, 9]
             mlr = f ((cP + 1), cKP, rKP, (time + clc + 1), lBr)
             mrr = f ((cP + 1), lKP, cKP, (time + crc + 1), rBr)
             lBr = if liSm == (-1) then 1 else liSm
@@ -366,7 +360,7 @@ tmAcR' kBPL
     | length kBPL == 2 = 2
 tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
     gFR = tmAFR $ take depth kBPL
-        where depth = 10
+        where depth = 50
 --    gFR = tmAFR kBPL
     go cP lKP rKP time
         | la == cP = time
@@ -413,8 +407,19 @@ tmAFR kBPL = go 0 0 100000000 where
             new_min_c = cost < min_cost
 {--
     1 2 3 4 5 6 7 8 9 0
-outer |   between   | outer
-      2     bis     9
+outer | btw | outer            | Cursorposition
+                       outer ist incl cursorposition
+    Wenn nächste Ziffer in outer liegt, kann sich nur nächstgelegener Finger dorthin bewegen
+Ist also nächste Position 5 - 0, dann kann sich nur rechter Finger dorthin bewegen
+check for right outer space
+rKP > lKP  &&  cKP >= rKP || rKP < lKP && cKP <= rKP = rr (right moves)
+rKP > lKP  &&  cKP <= lKP || rKP < lKP && cKP >= lKP = lr (left moves)
+... besser am Anfang linken Finger dediziert auf links setzen und rechten auf rechten, dann:
+cKP >= rKP = rr
+cKP <= lKP = lr
+oder (dann egal wer links oder rechts (Roberts Lösung)
+definiere outerSpace = if lKP < rKP then [0..lKP] ++ [rKP .. 9] else [0..rKP] ++ [lKP..9]
+... if cKP elem outerSpace then if clc < crc then lr else rr
 -- If new position is in outer space (see above) - the cursor that is closer
 -- has to move - positions can not swap.
 --
@@ -445,11 +450,9 @@ tmAFR' kBPL idx = memoizeM go (1, (kBPL !! 0), (kBPL !! idx), 1) where
     go f (cP, lKP, rKP, time)
         | cP == la = return time
     go f (cP, lKP, rKP, time)
-        | cP > idx && outerSpace =
-            if cD lKP cKP < cD rKP cKP
-            then f (cP + 1, cKP, rKP, time + clc + 1)
-            else f (cP + 1, lKP, cKP, time + crc + 1)
-        | cP > idx && not outerSpace = do
+        | cP > idx && rKP > lKP && cKP >= rKP || cP > idx && rKP < lKP && cKP <= rKP = mrr -- outerSpace opt
+        | cP > idx && rKP > lKP && cKP <= lKP || cP > idx && rKP < lKP && cKP >= lKP = mlr -- outerSpace opt
+        | cP > idx = do
             lr <- mlr
             rr <- mrr
             if lr < rr then mlr else mrr
@@ -458,7 +461,6 @@ tmAFR' kBPL idx = memoizeM go (1, (kBPL !! 0), (kBPL !! idx), 1) where
         | otherwise =
             f (cP + 1, cKP, rKP, time + clc + 1)
         where
-            outerSpace = elem cKP [0, 9]
             mlr = f (cP + 1, cKP, rKP, time + clc + 1)
             mrr = f (cP + 1, lKP, cKP, time + crc + 1)
             clc = cD lKP cKP
