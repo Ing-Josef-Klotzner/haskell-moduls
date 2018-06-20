@@ -137,6 +137,36 @@ tmAcc'' acc = go 2 (sKP 0) (sKP 1) 2 where
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
+-- basic version  ... taking next best step is not overall next best step!
+-- plus idea to create solution path and go from back to front to optimize until nothing to optimize
+-- to define: optimize ... basicalliy get lowest possible sum by looking always on part of problem in reverse way
+tmAc2 :: [Int] -> ([(Int, String, Int)], Int)
+tmAc2 acc = tmAcc'2 (cvtToKbL acc) where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
+tmAcc'2 :: [Int] -> ([(Int, [Char], Int)], Int)
+tmAcc'2 [] = ([],0)
+tmAcc'2 kBPL
+    | length kBPL < 2 = ([],1)
+    | length kBPL == 2 = ([],2)
+tmAcc'2 kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 [(kBPL !! 0, "l", kBPL !! 0)] where
+    gFR = tmAFR $ take depth kBPL
+        where depth = 30
+    go cP lKP rKP time rL
+        | la == cP = (rL, time)
+    go cP lKP rKP time rL
+        | gFR > cKP = go (cP + 1) cKP rKP (time + clc + 1) (rL ++ [(lKP, "l", cKP)])
+        | clc < crc = go (cP + 1) cKP rKP (time + clc + 1) (rL ++ [(lKP, "l", cKP)])
+        | otherwise = go (cP + 1) lKP cKP (time + crc + 1) (rL ++ [(rKP, "r", cKP)])
+        where
+            clc = cD lKP cKP
+            crc = cD rKP cKP
+            cKP = kBPL !! cP
+    la = length kBPL
+    -- calculate difference on keyboard
+    cD p1 p2 = abs (p2 - p1)
+
 -- this solves problem, but is much tooooo slow   ---  n = 24 .. 21s  ... n = 10000 .. impossible
 --    with outerSpace                                  n = 24 .. 2s  
 tmAcc''' :: [Int] -> Int
@@ -151,13 +181,13 @@ tmAcc''' acc = go 2 (sKP 0) (sKP gFR) 2 where
         | length acc == cP = time
     go cP lKP rKP time
         | outerSpace = 
-            if cD lKP cKP < cD rKP cKP
+            if clc < crc
             then lr
             else rr
         | lr < rr = lr
         | otherwise = rr
         where
-            outerSpace = elem cKP [0,1,8,9]
+            outerSpace = elem cKP [0, 9]
             lr = go (cP + 1) cKP rKP (time + clc + 1)
             rr = go (cP + 1) lKP cKP (time + crc + 1)
             clc = cD lKP cKP
@@ -170,87 +200,47 @@ tmAcc''' acc = go 2 (sKP 0) (sKP gFR) 2 where
         | otherwise = 9
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
-
--- na zack ... durch Optimierung 2*n1 < n2 ca. 100 mal schneller als tmAcc'''
-tmAcc'3' :: [Int] -> Int
-tmAcc'3' [] = 0
-tmAcc'3' acc
-    | length acc < 2 = 1
-    | length acc == 2 = 2
-tmAcc'3' acc = go 2 (sKP 0) (sKP gFR) 2 where
-    gFR = tmAFR $ take depth acc
-        where depth = 30
-    go cP lKP rKP time
-        | length acc == cP = time
-    go cP lKP rKP time
-        -- Optimierung outerSpace
-        | outerSpace = 
-            if cD lKP cKP < cD rKP cKP
-            then lr
-            else rr
-        -- Optimierung 2*n1 < n2 leider falsch
-        | lr < rr = lr
-        | otherwise = rr
-        where
-            outerSpace = elem cKP [0,1,8,9]
-            lr = go (cP + 1) cKP rKP (time + clc + 1)
-            rr = go (cP + 1) lKP cKP (time + crc + 1)
-            clc = cD lKP cKP
-            crc = cD rKP cKP
-            cKP = sKP cP
-    la = length acc
-    -- set keyboardpointer
-    sKP ptr 
-        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
-        | otherwise = 9
-    -- calculate difference on keyboard
-    cD p1 p2 = abs (p2 - p1)
-
-tmAccM acc = evalState (tmAccM' acc) M.empty
--- working solution with memoization  ---  memoization not effective - half as slow as tmAcc'''
-tmAccM' :: [Int] -> State (Map (Int, Int, Int, Int) Int ) Int
-tmAccM' [] = return 0
-tmAccM' acc
-    | length acc < 2 = return 1
-    | length acc == 2 = return 2
-tmAccM' acc = go 2 (sKP 0) (sKP 1) 2 where
-    go cP lKP rKP time
-        | length acc == cP = return time
-    go cP lKP rKP time
-        | elr < err = lr
-        | otherwise = rr
-        where
-            elr = evalState lr M.empty
-            err = evalState rr M.empty
-            lr = getOrUpdate (cP + 1, cKP, rKP, time) (go (cP + 1) cKP rKP (time + clc + 1))
-            rr = getOrUpdate (cP + 1, lKP, cKP, time) (go (cP + 1) lKP cKP (time + crc + 1))
-            clc = cD lKP cKP
-            crc = cD rKP cKP
-            cKP = sKP cP
-    la = length acc
-    -- set keyboardpointer
-    sKP ptr 
-        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
-        | otherwise = 9
-    -- calculate difference on keyboard
-    cD p1 p2 = abs (p2 - p1)
-
-getOrUpdate :: (Ord k) => k -> State (Map k v) v -> State (Map k v) v
-getOrUpdate k ifEmptyState = do
-    maybeVal <- gets (M.lookup k)
-    case maybeVal of
-        Just v -> return v
-        Nothing -> do
-            ifEmpty <- ifEmptyState
-            modify (M.insert k ifEmpty)
-            return ifEmpty
 
 -- memoized version of tmAcc'''  --- working, but still too slow  -- n = 642 .. 137s
            --           reduced with outerSpace to                   n = 642 .. 5 s
+tmAcM :: [Int] -> Int
 tmAcM acc = tmAcM' (cvtToKbL acc) where
     cvtToKbL = map kBP
     kBP 0 = 9
     kBP n = n - 1
+tmAcM' :: [Int] -> Int
+tmAcM' [] = 0
+tmAcM' kBPL
+    | la < 2 = 1
+    | la == 2 = 2
+    where
+        la = length kBPL
+tmAcM' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1) where
+    gFR = tmAFR $ take depth kBPL
+        where depth = 30
+    go :: Monad m => ((Int, Int, Int, Int) -> m Int) -> (Int, Int, Int, Int) -> m Int
+    go f (cP, lKP, rKP, time)
+        | cP == la = return time
+    go f (cP, lKP, rKP, time) 
+        | outerSpace =
+            if clc < crc
+            then mlr
+            else mrr
+        | otherwise = do
+            lr <- mlr
+            rr <- mrr
+            if lr < rr then mlr else mrr
+        where
+            outerSpace = elem cKP [0, 9]
+            mlr = f ((cP + 1), cKP, rKP, (time + clc + 1))
+            mrr = f ((cP + 1), lKP, cKP, (time + crc + 1))
+            clc = cD lKP cKP
+            crc = cD rKP cKP
+            cKP = kBPL !! cP
+    la = length kBPL
+    -- calculate difference on keyboard
+    cD p1 p2 = abs (p2 - p1)
+
 tmAcM''' :: [Int] -> Int
 tmAcM''' [] = 0
 tmAcM''' kBPL
@@ -267,7 +257,7 @@ tmAcM''' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1,14, True) where
         | cP == la && mains = return time
     go f (cP, lKP, rKP, time, dep, mains) 
         | outerSpace =
-            if cD lKP cKP < cD rKP cKP
+            if clc < crc
             then if mains then mlrm else mlr
             else if mains then mrrm else mrr
         | otherwise = do
@@ -277,7 +267,7 @@ tmAcM''' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1,14, True) where
             then if mains then mlrm else mlr 
             else if mains then mrrm else mrr
         where
-            outerSpace = elem cKP [0,1,8,9]
+            outerSpace = elem cKP [0, 9]
             mlrp = f (cP + 1, cKP, rKP, time + clc + 1, dep, False)
             mrrp = f (cP + 1, lKP, cKP, time + crc + 1, dep, False)
             mlr = f (cP + 1, cKP, rKP, time + clc + 1, dep - 1, False)
@@ -291,60 +281,28 @@ tmAcM''' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1,14, True) where
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
-tmAcM'' :: [Int] -> Int
-tmAcM'' [] = 0
+tmAc2M :: [Int] -> ([(Int, String, Int)], Int)
+tmAc2M acc = tmAcM'' (cvtToKbL acc) where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
+tmAcM'' :: [Int] -> ([(Int, String, Int)], Int)
+tmAcM'' [] = ([], 0)
 tmAcM'' kBPL
-    | la < 2 = 1
-    | la == 2 = 2
+    | la < 2 = ([], 1)
+    | la == 2 = ([], 2)
     where
         la = length kBPL
-tmAcM'' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1, 20, True) where
+tmAcM'' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1, [(kBPL !! 0, "l", kBPL !! 0)]) where
     gFR = tmAFR $ take depth kBPL
         where depth = 30
-    go :: Monad m => ((Int, Int, Int, Int, Int, Bool) -> m Int) -> (Int, Int, Int, Int, Int, Bool) -> m Int
-    go f (cP, lKP, rKP, time, dep, mains)
-        | cP == la && not mains || not mains && dep == 0 = return time
-        | cP == la && mains = return time
-    go f (cP, lKP, rKP, time, dep, mains) 
+    go :: Monad m => ((Int, Int, Int, Int, [(Int, String, Int)]) -> m ([(Int, String, Int)], Int)) 
+                    -> (Int, Int, Int, Int, [(Int, String, Int)]) -> m ([(Int, String, Int)], Int)
+    go f (cP, lKP, rKP, time, rL)
+        | cP == la = return (rL, time)
+    go f (cP, lKP, rKP, time, rL) 
         | outerSpace =
-            if cD lKP cKP < cD rKP cKP
-            then if mains then mlrm else mlr
-            else if mains then mrrm else mrr
-        | otherwise = do
-            lr <- mlr
-            rr <- mrr
-            if lr < rr 
-            then if mains then mlrm else mlr 
-            else if mains then mrrm else mrr
-        where
-            outerSpace = elem cKP [0,1,8,9]
-            mlr = f (cP + 1, cKP, rKP, time + clc + 1, dep - 1, False)
-            mrr = f (cP + 1, lKP, cKP, time + crc + 1, dep - 1, False)
-            mlrm = f (cP + 1, cKP, rKP, time + clc + 1, dep - 1, True)
-            mrrm = f (cP + 1, lKP, cKP, time + crc + 1, dep - 1, True)
-            clc = cD lKP cKP
-            crc = cD rKP cKP
-            cKP = kBPL !! cP
-    la = length kBPL
-    -- calculate difference on keyboard
-    cD p1 p2 = abs (p2 - p1)
-
-tmAcM' :: [Int] -> Int
-tmAcM' [] = 0
-tmAcM' kBPL
-    | la < 2 = 1
-    | la == 2 = 2
-    where
-        la = length kBPL
-tmAcM' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1) where
-    gFR = tmAFR $ take depth kBPL
-        where depth = 30
-    go :: Monad m => ((Int, Int, Int, Int) -> m Int) -> (Int, Int, Int, Int) -> m Int
-    go f (cP, lKP, rKP, time)
-        | cP == la = return time
-    go f (cP, lKP, rKP, time) 
-        | outerSpace =
-            if cD lKP cKP < cD rKP cKP
+            if clc < crc
             then mlr
             else mrr
         | otherwise = do
@@ -352,9 +310,9 @@ tmAcM' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1) where
             rr <- mrr
             if lr < rr then mlr else mrr
         where
-            outerSpace = elem cKP [0,1,8,9]
-            mlr = f ((cP + 1), cKP, rKP, (time + clc + 1))
-            mrr = f ((cP + 1), lKP, cKP, (time + crc + 1))
+            outerSpace = elem cKP [0, 9]
+            mlr = f (cP + 1, cKP, rKP, time + clc + 1, rL ++ [(lKP, "l", cKP)])
+            mrr = f (cP + 1, lKP, cKP, time + crc + 1, rL ++ [(rKP, "r", cKP)])
             clc = cD lKP cKP
             crc = cD rKP cKP
             cKP = kBPL !! cP
@@ -376,7 +334,7 @@ tmAcP kBPL lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
     go f (cP, lKP, rKP, time, liSm)
         -- Optimierung
         | outerSpace =
-            if cD lKP cKP < cD rKP cKP
+            if clc < crc
             then mlr
             else mrr
         | otherwise = do
@@ -384,7 +342,7 @@ tmAcP kBPL lKP rKP = memoizeM go (0, lKP, rKP, 0, (-1)) where
             rr <- mrr
             if lr < rr then mlr else mrr
         where
-            outerSpace = elem cKP [0,1,8,9]
+            outerSpace = elem cKP [0, 9]
             mlr = f ((cP + 1), cKP, rKP, (time + clc + 1), lBr)
             mrr = f ((cP + 1), lKP, cKP, (time + crc + 1), rBr)
             lBr = if liSm == (-1) then 1 else liSm
@@ -454,9 +412,9 @@ tmAFR kBPL = go 0 0 100000000 where
             new_min_idx = if new_min_c then idx else min_idx
             new_min_c = cost < min_cost
 {--
-  1 2 3 4 5 6 7 8 9 0
-outer | between | outer
-      3   bis   8
+    1 2 3 4 5 6 7 8 9 0
+outer |   between   | outer
+      2     bis     9
 -- If new position is in outer space (see above) - the cursor that is closer
 -- has to move - positions can not swap.
 --
@@ -500,7 +458,7 @@ tmAFR' kBPL idx = memoizeM go (1, (kBPL !! 0), (kBPL !! idx), 1) where
         | otherwise =
             f (cP + 1, cKP, rKP, time + clc + 1)
         where
-            outerSpace = elem cKP [0,1,8,9]
+            outerSpace = elem cKP [0, 9]
             mlr = f (cP + 1, cKP, rKP, time + clc + 1)
             mrr = f (cP + 1, lKP, cKP, time + crc + 1)
             clc = cD lKP cKP
@@ -703,3 +661,43 @@ main = do
 --Test Case #00: An employee can put his left finger on key 1 and his right finger on key 2 before the process, so the whole process takes 2 seconds. 
 
 --Test Case #01: An employee can put his left finger on key 1 and his right finger on key 0 before the process. From that position, it takes 2 seconds to press first two keys. After that, he can move his left finger from key 1 to key 3, which takes 2 seconds and then press it which takes additional second. The whole process takes 5 seconds. Note that key 0 is the rightmost key.
+
+--tmAccM acc = evalState (tmAccM' acc) M.empty
+---- working solution with memoization  ---  memoization not effective - half as slow as tmAcc'''
+--tmAccM' :: [Int] -> State (Map (Int, Int, Int, Int) Int ) Int
+--tmAccM' [] = return 0
+--tmAccM' acc
+--    | length acc < 2 = return 1
+--    | length acc == 2 = return 2
+--tmAccM' acc = go 2 (sKP 0) (sKP 1) 2 where
+--    go cP lKP rKP time
+--        | length acc == cP = return time
+--    go cP lKP rKP time
+--        | elr < err = lr
+--        | otherwise = rr
+--        where
+--            elr = evalState lr M.empty
+--            err = evalState rr M.empty
+--            lr = getOrUpdate (cP + 1, cKP, rKP, time) (go (cP + 1) cKP rKP (time + clc + 1))
+--            rr = getOrUpdate (cP + 1, lKP, cKP, time) (go (cP + 1) lKP cKP (time + crc + 1))
+--            clc = cD lKP cKP
+--            crc = cD rKP cKP
+--            cKP = sKP cP
+--    la = length acc
+--    -- set keyboardpointer
+--    sKP ptr 
+--        | ptr < la = if acc !! ptr == 0 then 9 else acc !! ptr - 1
+--        | otherwise = 9
+--    -- calculate difference on keyboard
+--    cD p1 p2 = abs (p2 - p1)
+
+--getOrUpdate :: (Ord k) => k -> State (Map k v) v -> State (Map k v) v
+--getOrUpdate k ifEmptyState = do
+--    maybeVal <- gets (M.lookup k)
+--    case maybeVal of
+--        Just v -> return v
+--        Nothing -> do
+--            ifEmpty <- ifEmptyState
+--            modify (M.insert k ifEmpty)
+--            return ifEmpty
+
