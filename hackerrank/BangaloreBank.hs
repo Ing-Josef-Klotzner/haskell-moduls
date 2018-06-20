@@ -366,7 +366,7 @@ tmAcR' kBPL
     | length kBPL == 2 = 2
 tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
     gFR = tmAFR $ take depth kBPL
-        where depth = 30
+        where depth = 10
 --    gFR = tmAFR kBPL
     go cP lKP rKP time
         | la == cP = time
@@ -374,7 +374,7 @@ tmAcR' kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 where
         | if lOK then left else lr < rr = lr
         | otherwise = rr
         where
-            depth = 14
+            depth = 10
             lOK = la > (2 + depth)
             left = (snd $ tmAcP kBPLP lKP rKP) == 1
             kBPLP = drop cP $ take (cP + depth) kBPL
@@ -445,14 +445,14 @@ tmAFR' kBPL idx = memoizeM go (1, (kBPL !! 0), (kBPL !! idx), 1) where
     go f (cP, lKP, rKP, time)
         | cP == la = return time
     go f (cP, lKP, rKP, time)
-        | cP > idx && not outerSpace = do
-            lr <- mlr
-            rr <- mrr
-            if lr < rr then mlr else mrr
         | cP > idx && outerSpace =
             if cD lKP cKP < cD rKP cKP
             then f (cP + 1, cKP, rKP, time + clc + 1)
             else f (cP + 1, lKP, cKP, time + crc + 1)
+        | cP > idx && not outerSpace = do
+            lr <- mlr
+            rr <- mrr
+            if lr < rr then mlr else mrr
         | cP == idx = 
             f (cP + 1, lKP, cKP, time + 1)
         | otherwise =
