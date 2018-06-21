@@ -167,13 +167,19 @@ tmAcc'2 kBPL = go 1 (kBPL !! 0) (kBPL !! gFR) 1 [(kBPL !! 0, "l", kBPL !! 0)] wh
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
+{--
+*Main> tmAc2M [1, 9, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 0, 1, 9, 4, 2, 5, 3, 6, 4, 7, 5, 3, 6, 4, 7, 5, 8]
+([(0,"l",0),(8,"r",8),(8,"r",3),(0,"l",1),(3,"r",4),(1,"l",2),(4,"r",5),(2,"l",3),(5,"r",6),(3,"l",4),(6,"r",7),(4,"l",5),(7,"r",8),(8,"r",9),(5,"l",0),(9,"r",8),(8,"r",3),(0,"l",1),(3,"r",4),(1,"l",2),(4,"r",5),(2,"l",3),(5,"r",6),(6,"r",4),(3,"l",2),(4,"r",5),(2,"l",3),(5,"r",6),(3,"l",4),(6,"r",7)],71)
+*Main> tmAc2 [1, 9, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 0, 1, 9, 4, 2, 5, 3, 6, 4, 7, 5, 3, 6, 4, 7, 5, 8]
+([(0,"l",0),(8,"r",8),(0,"l",3),(3,"l",1),(1,"l",4),(4,"l",2),(8,"r",5),(2,"l",3),(5,"r",6),(3,"l",4),(6,"r",7),(4,"l",5),(7,"r",8),(8,"r",9),(5,"l",0),(9,"r",8),(0,"l",3),(3,"l",1),(1,"l",4),(4,"l",2),(8,"r",5),(2,"l",3),(5,"r",6),(3,"l",4),(4,"l",2),(6,"r",5),(2,"l",3),(5,"r",6),(3,"l",4),(6,"r",7)],79)
+--}
+
 -- this solves problem, but is much tooooo slow   ---  n = 24 .. 21s  ... n = 10000 .. impossible
 --    with outerSpace                                  n = 24 .. 2s  
 tmAc3 acc = tmAcc''' (cvtToKbL acc) where
     cvtToKbL = map kBP
     kBP 0 = 9
     kBP n = n - 1
-    
 tmAcc''' :: [Int] -> Int
 tmAcc''' [] = 0
 tmAcc''' kBPL 
@@ -238,6 +244,11 @@ tmAcM' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1) where
     -- calculate difference on keyboard
     cD p1 p2 = abs (p2 - p1)
 
+tmAc3M :: [Int] -> Int
+tmAc3M acc = tmAcM''' (cvtToKbL acc) where
+    cvtToKbL = map kBP
+    kBP 0 = 9
+    kBP n = n - 1
 tmAcM''' :: [Int] -> Int
 tmAcM''' [] = 0
 tmAcM''' kBPL
@@ -245,32 +256,38 @@ tmAcM''' kBPL
     | la == 2 = 2
     where
         la = length kBPL
-tmAcM''' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1,14, True) where
+tmAcM''' kBPL = memoizeM go (1, (kBPL !! 0), (kBPL !! gFR), 1,14, True, False) where
     gFR = tmAFR $ take depth kBPL
         where depth = 50
-    go :: Monad m => ((Int, Int, Int, Int, Int, Bool) -> m Int) -> (Int, Int, Int, Int, Int, Bool) -> m Int
-    go f (cP, lKP, rKP, time, dep, mains)
+    go :: Monad m => ((Int, Int, Int, Int, Int, Bool, Bool) -> m Int) 
+                    -> (Int, Int, Int, Int, Int, Bool, Bool) -> m Int
+    go f (cP, lKP, rKP, time, dep, mains, ctsDwn)
         | cP == la && not mains || not mains && dep <= 0 = return time
         | cP == la && mains = return time
-    go f (cP, lKP, rKP, time, dep, mains) 
-        | outerSpace =
-            if clc < crc
-            then if mains then mlrm else mlr
+    go f (cP, lKP, rKP, time, dep, mains, ctsDwn) 
+        | gFR > cP = mlr
+        | rKP > lKP && cKP <= lKP || rKP < lKP && cKP >= lKP = mlr   -- outerSpace optimization
+        | rKP > lKP && cKP >= rKP || rKP < lKP && cKP <= rKP = mrr   -- outerSpace optimization
+        | ctsDwn = do 
+            lr <- mlr
+            rr <- mrr
+            if lr < rr 
+            then if mains then mlrm else mlr 
             else if mains then mrrm else mrr
         | otherwise = do
             lr <- mlrp
             rr <- mrrp
             if lr < rr 
-            then if mains then mlrm else mlr 
-            else if mains then mrrm else mrr
+            then if mains then mlrm else mlrp
+            else if mains then mrrm else mrrp
         where
-            outerSpace = elem cKP [0, 9]
-            mlrp = f (cP + 1, cKP, rKP, time + clc + 1, dep, False)
-            mrrp = f (cP + 1, lKP, cKP, time + crc + 1, dep, False)
-            mlr = f (cP + 1, cKP, rKP, time + clc + 1, dep - 1, False)
-            mrr = f (cP + 1, lKP, cKP, time + crc + 1, dep - 1, False)
-            mlrm = f (cP + 1, cKP, rKP, time + clc + 1, dep - 1, True)
-            mrrm = f (cP + 1, lKP, cKP, time + crc + 1, dep - 1, True)
+            depth = 14
+            mlrp = f (cP + 1, cKP, rKP, time + clc + 1, depth, False, True)
+            mrrp = f (cP + 1, lKP, cKP, time + crc + 1, depth, False, True)
+            mlr = f (cP + 1, cKP, rKP, time + clc + 1, dep - 1, False, True)
+            mrr = f (cP + 1, lKP, cKP, time + crc + 1, dep - 1, False, True)
+            mlrm = f (cP + 1, cKP, rKP, time + clc + 1, dep - 1, True, False)
+            mrrm = f (cP + 1, lKP, cKP, time + crc + 1, dep - 1, True, False)
             clc = cD lKP cKP
             crc = cD rKP cKP
             cKP = kBPL !! cP
