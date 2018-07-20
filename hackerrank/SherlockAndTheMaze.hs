@@ -1,12 +1,43 @@
 module Main where
 import Data.List (intercalate)
-import Control.Monad (forM)
+import Control.Monad (forM, filterM)
 import Data.Array
 import Data.Map (Map)
 import qualified Data.Map as M
-import Data.List (sort)
+import Data.List (sort, replicate, permutations, notElem)
 import Control.Concurrent.MVar (newMVar, readMVar, putMVar, takeMVar)
 import Data.Ix (Ix, range)
+import Debug.Trace (traceIO)
+import Data.List (tails, stripPrefix, delete)
+import Data.Maybe (catMaybes)
+import qualified Data.Set as Set
+import Data.Bits (Bits, xor, bit, shift, popCount, testBit)
+
+perms :: Eq a => [a] -> [[a]]
+perms [] = [[]]
+perms xs = [ i:j | i <- xs, j <- perms $ delete i xs ]
+
+selections :: [t] -> [(t, [t])]
+selections []     = []
+selections (x:xs) = (x, xs) : [(y, x : ys) | (y, ys) <- selections xs]
+
+uniqueSelections x = unique $ selections x
+
+permutations' :: Ord a => [a] -> [[a]]
+permutations' xs = xs : [y : zs | (y, ys) <- usel, zs <- permutations' ys] where
+    usel = uniqueSelections xs
+
+uniquePermutations x = unique $ permutations' x
+
+unique :: (Ord a) => [a] -> [a]
+unique xs = go Set.empty xs where
+  go s (x:xs)
+   | x `Set.member` s = go s xs
+   | otherwise        = x : go (Set.insert x s) xs
+  go _ _              = []
+
+count :: Eq a => [a] -> [a] -> Int
+count sub = length . catMaybes . map (stripPrefix sub) . tails
 
 grid :: (Int, Int) -> [((Int, Int), Bool)]
 grid (m, n) = [((x, y), b) | x <- [1..m], y <- [1..n], b <- [True]] 
@@ -14,18 +45,100 @@ grid (m, n) = [((x, y), b) | x <- [1..m], y <- [1..n], b <- [True]]
 gridMap :: (Int, Int) -> Map (Int, Int) Bool
 gridMap (m, n) = M.fromList $ grid (m, n)
 
-findpaths :: (Int, Int, Int) -> [[((Int, Int), Int)]]
-findpaths (m, n, k) = go (1, 1) [] [] 0 True where
-    go (0, 0) res _ _ _ = res
-    go (x, y) res path k_ right
-        | x /= m = go (x + 1, y) res addXYP k_nr True
-        | y /= n = go (x, y + 1) res addXYP k_nd False
-        | x == m && y == n = go (0, 0) add_ini [] 0 right
+-- m .. horizontal right edge   n .. vertical, lower edge   k .. number of maximum direction turns
+findmovesC (m, n, k) = (length result) `rem` (10^9 + 7) where
+    result = findmovesL (m, n, k)
+
+findmoves (m, n, k) = (result, length result) where
+    result = findmovesL (m, n, k)
+
+findmovesL (m, n, k) = result where
+    result = filter k_ $ uniquePermutations path
+    rightSteps = m - 1
+    downSteps = n - 1
+    path = replicate rightSteps 'R' ++ replicate downSteps 'D'
+    k_ x = (count "DR" x + count "RD" x) <= k
+
+findpaths (m, n, k) = go (head movesL) (tail movesL) [((1,1), 0)] [] right where
+    go mvs restL path pathL rght
+        | mvs /= [] = if head mvs == 'R' 
+                            then go (tail mvs) restL newpathR pathL True
+                            else go (tail mvs) restL newpathD pathL False
+        | restL /= [] = go (head restL) (tail restL) [((1,1), 0)] (pathL ++ [path]) right
+        | otherwise = pathL ++ [path]
         where
-            addXYP = path ++ [((x, y), k_)]
-            add_ini = if k_ > k  then res else res ++ [addXYP]
-            k_nr = if x /= 1 || y /= 1 then (if right then k_ else k_ + 1) else k_
-            k_nd = if x /= 1 || y /= 1 then (if right then k_ + 1 else k_) else k_
+        xyR = (x + 1, y)
+        xyD = (x, y + 1)
+        newpathR = path ++ [(xyR, knR)]
+        newpathD = path ++ [(xyD, knD)]
+        knR = if rght then k_ else k_ + 1
+        knD = if rght then k_ + 1 else k_
+        ((x, y), k_) = last path
+        
+    movesL = findmovesL (m, n, k)
+    right = if (head $ head movesL) == 'R' then True else False
+
+findmovesBC :: (Int, Int, Int) -> Int
+findmovesBC (m, n, k) = length result where
+    result = findmovesBL (m, n, k) :: [Integer]
+
+findmovesB :: (Enum a, Num a, Bits a) => (Int, Int, Int) -> ([a], Int)
+findmovesB (m, n, k) = (result, length result) where
+    result = findmovesBL (m, n, k)
+-- do it bitwise for better performance .. twice as fast as findmovesL
+findmovesBL :: (Enum a, Num a, Bits a) => (Int, Int, Int) -> [a]
+findmovesBL (m, n, k) = result where
+    result = filter f [1 .. path]
+    f x = mR x && mK x
+    rightSteps = if m > n then m - 1 else n - 1
+    downSteps = if m > n then n - 1 else m - 1
+    highestBit = rightSteps + downSteps - 1
+    highBitSet x = testBit x highestBit
+    mK numb = count_k numb <= k
+    count_k num = go 0 0 where
+        go bitDgt k_ 
+            | bitDgt == highestBit = k_
+            | otherwise = go (bitDgt + 1) diffBit
+            where
+            diffBit = if chk_k bitDgt == chk_k (bitDgt + 1) then k_ else k_ + 1
+            chk_k y = testBit num y
+--  '1' is bit for 'R'    '0' is bit for 'D'
+    path = shift (foldr1 xor (map bit [0 .. (rightSteps - 1)])) downSteps
+    -- ensure exactly m '1's ('R's)
+    mR numb = popCount numb == rightSteps
+
+--If the problem is to find the number of paths from (0,0) to (a,b) the answer is (a+b)=(a+b). 
+--which should be called with n=a+b and x= min a b, i.e. binom (a+b) (min a b)
+-- bin 6 3  ==  routes (4, 4) = 20
+
+--p(m,n,2k) = (m-1)*(n-1) + (n-1)*(m-1)   p(4,4,4) = (3)*(3) + (3)*(3) = 3*3 + 3*3 = 18
+--             k-1    k      k-1    k                 1   2     1   2
+-- for odd turns:
+--p(m,n,2k-1) = 2*(m-1)*(n-1)
+--                 k-1   k-1
+
+-- choose = binom
+binom::Integral a => a -> a -> a        --    a     b
+binom n x = foldl (\z y -> z*(n-y+1) `div` y) 1 [1..x]
+
+choose n 0 = 1
+choose n k = n * choose (n - 1) (k - 1) `div` k
+
+bi n k = product [n,n-1..n-k+1] `div` product [1..k]
+
+-- 0 choose 1 is 1 here - wrong - should be 0
+bi_ n x = fac n `div` (fac x * fac (n - x))
+-- factorial
+fac = product . flip take [1..]
+
+paths (m, n, k)
+    | k == 0 = 0
+    | (k - 1) < (m + n - 3) `quot` 2 = k_calc 
+    | otherwise = routesM - k_calc
+    where
+        k_calc = (choose (m - 1) (k - 1)) + (choose (n - 1) (k - 1))
+        -- all routes
+        routesM = (choose (m + n - 2) (m - 1))
 
 table_array2D :: (Enum t, Enum t1, Num t, Num t1, Ix t, Ix t1) =>
                 (t, t1) -> (((t, t1) -> e) -> (t, t1) -> e) -> (t, t1) -> e
@@ -41,8 +154,11 @@ table_array dom f = g
         arr = array dom [(x, f g x) | x <- range dom]
         g x = arr ! x
 
-routes :: (Int, Int) -> Int
-routes (m, n) = arr ! (m, n)
+routesM (m, n) = choose (m + n - 1 - 1) (m - 1)
+
+-- maximum routes possible
+routes' :: (Int, Int) -> Int
+routes' (m, n) = arr ! (m, n)
     where
         arr = array ((1, 1), (m, n)) 
                     [((x, y), inner (x, y)) | x <- [1..m], y <- [1..n]]
@@ -51,14 +167,19 @@ routes (m, n) = arr ! (m, n)
             | x == 1 || y == 1 = 1
             | otherwise = arr ! (x - 1, y) + arr ! (x, y - 1)
 
---routes :: (Int, Int) -> Int
---routes (m, n) = arr ! (m, n)
---    where
---        arr = array ((1, 1), (m, n)) [((x, y), inner (x, y)) | x <- [1..m], y <- [1..n]]
---        inner (x, y)
---            | x == 1 && y == 1 = 0
---            | x == 1 || y == 1 = 1
---            | otherwise = arr ! (x - 1, y) + arr ! (x, y - 1)
+-- making efficient the inefficient version
+routes (x, y) = table_array2D (x, y) routes''' (x, y) where
+    routes''' self (x, y)
+        | x == 1 && y == 1 = 0
+        | x == 1 || y == 1 = 1
+        | otherwise = self (x - 1, y) + self (x, y - 1)
+        
+-- maximum routes possible -- inefficient version
+routes'' :: (Int, Int) -> Int
+routes'' (x, y) 
+            | x == 1 && y == 1 = 0
+            | x == 1 || y == 1 = 1
+            | otherwise = routes'' (x - 1, y) + routes'' (x, y - 1)
 
 knapsack :: (Num a, Num b, Ord b, Ix a) => [(b, a)] -> a -> b
 knapsack items wmax = table_array (0, wmax) m wmax
@@ -78,64 +199,6 @@ memoIO f = do
           Just r  -> return r
   return f'
 
--- finding all variations of horizontal pattern
-findPaths :: (Int, Int, Int) -> [[((Int, Int), Int)]]
-findPaths (m, n, k) = go (1, 1) (gridMap (m, n)) [] [] 0 True (m - 1) True where
-    go _ mpn _ _ _ _ _ _
-        | mpn == M.empty = [[]]
-    go (0, 0) _ res _ _ _ _ _ = res 
-    go (x, y) mpn res path k_ right z h
-        | lookupTrue (x + 1, y) && x /= m && h = 
-            go (x + 1, y) mpn res addXYP k_nr True z h
-        | lookupTrue (x, y + 1) && y /= n && not h = 
-            go (x, y + 1) mpn res addXYP k_nd False z h
-        | lookupFalse (2, y) && y /= n && h = 
-            go (x, y + 1) setMapFalse res addXYP k_ False z h
-        | lookupFalse (x, 2) && x /= m && not h = 
-            go (x + 1, y) setMapFalse res addXYP k_ True z h
-        | lookupFalse (x + 1, y) && y /= n && h = 
-            go (x, y + 1) setMapFalse res addXYP k_nd False z h
-        | lookupFalse (x, y + 1) && x /= m && not h = 
-            go (x + 1, y) setMapFalse res addXYP k_nr True z h
-
-        | y == 1 && x == m && y /= n && h
-            || lookupFalse ((x - z), (y - 1)) && x == m && y /= n && h =
-            go (x, y + 1) setMapFalse res addXYP k_nd False z h
-        | x == 1 && x /= m && y == n && not h
-            || lookupFalse ((x - 1), (y - z)) && x /= m && y == n && not h =
-            go (x + 1, y) setMapFalse res addXYP k_nr True z h
-        | x == m && y /= n && h =
-            go (x, y + 1) mpn res addXYP k_nd False z h
-        | x /= m && y == n && not h =
-            go (x + 1, y) mpn res addXYP k_nr True z h
-        -- end of finding one path
-        | lookupTrue (1, (n - 1)) && x == m && y == n && h =
-            go (1, 1) mpn add_ini [] 0 True z h
-        | lookupTrue ((m - 1), 1) && x == m && y == n && not h =
-            go (1, 1) mpn add_ini [] 0 False z h
-        -- end of finding all paths
-        | lookupFalse (1, (n - 1)) && x == m && y == n && z /= 0 && h =
-            go (1, 1) (gridMap (m, n)) add_ini [] 0 True (z - 1) h
-        | y == 1 && y == n && x == m =
-            go (0, 0) mpn (rv add_ini) [] 0 right z h
-        | lookupFalse ((m - 1), 1) && x == m && y == n && z /= 0 && not h =
-            go (1, 1) (gridMap (m, n)) add_ini [] 0 False (z - 1) h
-        | x == 1 && y == n && x == m =
-            go (0, 0) mpn (rv add_ini) [] 0 right z h
-        | lookupFalse (1, (n - 1)) && x == m && y == n && z == 0 && h =
-            go (1, 1) (gridMap (m, n)) add_ini [] 0 False (n - 1) False
-        | lookupFalse ((m - 1), 1) && x == m && y == n && z == 0 && not h =
-            go (0, 0) mpn (rv add_ini) [] 0 False z h
-        where
-            setMapFalse = M.adjust (== False) (x, y) mpn
-            lookupTrue (v, w) = M.lookup (v, w) mpn == Just True
-            lookupFalse (v, w) = M.lookup (v, w) mpn == Just False
-            rv = reverse
-            add_ini = if rv addXYP `elem` res || k_ > k  then res else (rv addXYP) : res
-            addXYP = ((x, y), k_) : path
-            k_nr = if right then k_ else k_ + 1
-            k_nd = if right then k_ + 1 else k_
-
 -- eauivalent to findWithDefault 
 getW :: Ord k => a -> k -> Map k a -> a
 getW ifEmpty k mp = do
@@ -145,8 +208,9 @@ getW ifEmpty k mp = do
         Nothing -> ifEmpty
 
 -- function to show path
-showPath :: (Int, Int, Int) -> Int -> IO ()
-showPath (m, n, k) p = showPath' (m, n, k) p findPaths
+showpath :: (Int, Int, Int) -> Int -> IO ()
+showpath (m, n, k) p = showPath' (m, n, k) p findpaths
+
 showPath' :: (Int, Int, Int) -> Int -> ((Int, Int, Int) -> [[((Int, Int), Int)]]) -> IO ()
 showPath' (m, n, k) p findPaths = do
     let paths = findPaths (m, n, k)
@@ -160,17 +224,13 @@ showPath' (m, n, k) p findPaths = do
     else
         putStrLn $ "showing path number " ++ show p ++ " of ( 1 - " ++ show l ++ " )"
     let path_ = paths !! px
-        path = map (\((x, y), k) -> if k >= 0 then ((x,y), 'x') else ((x,y), ' ')) path_
+        path = map (\((x, y), k) -> ((x,y), 'x')) path_
         pathMap = M.fromList path
---        sumL = snd $ findPaths (m, n)
         prt scrMap = do 
-            (zipWith id) (fmap (\x y -> getW ' ' (x,y) scrMap) (concat $ replicate n [1..(m + 1)]))
+            (zipWith ($)) (fmap (\x y -> getW ' ' (x,y) scrMap) (concat $ replicate n [1..(m + 1)]))
                 (sort $ concat $ replicate (m + 1) [1..n])
         screenMap = M.union pathMap blankScreenMap
     putStrLn $ prt screenMap
---    putStrLn $ "this Sum: " ++ show (sumL !! px) ++ "   highest Sum: " ++ show (maximum  sumL)
---    putStrLn "Maximum sum of all paths:"
---    putStrLn $ show ( (zipWith id) ((\s p -> (s, p)) <$> sumL) [1..])
     where
         blankScreen :: [((Int, Int), Char)]
         blankScreen = [((x, y), b) | x <- [1..(m + 1)], y <- [1..n], b <- if x == (m + 1) then ['\n'] else ['-']] 
@@ -183,7 +243,8 @@ main = do
     t <- fmap (read :: String -> Int) getLine
     nkL <- forM [1..t] (\_ -> do fmap (map (read :: String -> Int).words) getLine)
     
-    putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show (length $ findPaths (n, m, k))) $ nkL
+--    putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show (length $ findPaths (n, m, k))) $ nkL
+    putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show (paths (n, m, k))) $ nkL
 
 --10
 --1 3 3
@@ -255,3 +316,63 @@ main = do
 --He starts from (1, 1) facing down and moves to (2, 1). Then he turns right and takes two steps forward to reach (2, 3).
 --He starts from (1, 1) facing right and moves two steps forward to reach (1, 3). Then he turns down and proceeds one step to (2, 3).
 --Test Case #02: There are 0 ways with 0 turn, 2 ways with 1 turn, 4 ways with 2 turns, 8 ways with 3 turns and 4 ways with 4 turns to reach (4, 4).
+
+
+---- finding all variations of horizontal pattern
+--findPaths :: (Int, Int, Int) -> [[((Int, Int), Int)]]
+--findPaths (m, n, k) = go (1, 1) (gridMap (m, n)) [] [] 0 True (m - 1) True where
+--    go _ mpn _ _ _ _ _ _
+--        | mpn == M.empty = [[]]
+--    go (0, 0) _ res _ _ _ _ _ = res 
+--    go (x, y) mpn res path k_ right z h
+--        | lookupTrue (x + 1, y) && x /= m && h = 
+--            go (x + 1, y) mpn res addXYP k_nr True z h
+--        | lookupTrue (x, y + 1) && y /= n && not h = 
+--            go (x, y + 1) mpn res addXYP k_nd False z h
+--        | lookupFalse (2, y) && y /= n && h = 
+--            go (x, y + 1) setMapFalse res addXYP k_ False z h
+--        | lookupFalse (x, 2) && x /= m && not h = 
+--            go (x + 1, y) setMapFalse res addXYP k_ True z h
+--        | lookupFalse (x + 1, y) && y /= n && h = 
+--            go (x, y + 1) setMapFalse res addXYP k_nd False z h
+--        | lookupFalse (x, y + 1) && x /= m && not h = 
+--            go (x + 1, y) setMapFalse res addXYP k_nr True z h
+
+--        | y == 1 && x == m && y /= n && h
+--            || lookupFalse ((x - z), (y - 1)) && x == m && y /= n && h =
+--            go (x, y + 1) setMapFalse res addXYP k_nd False z h
+--        | x == 1 && x /= m && y == n && not h
+--            || lookupFalse ((x - 1), (y - z)) && x /= m && y == n && not h =
+--            go (x + 1, y) setMapFalse res addXYP k_nr True z h
+--        | x == m && y /= n && h =
+--            go (x, y + 1) mpn res addXYP k_nd False z h
+--        | x /= m && y == n && not h =
+--            go (x + 1, y) mpn res addXYP k_nr True z h
+--        -- end of finding one path
+--        | lookupTrue (1, (n - 1)) && x == m && y == n && h =
+--            go (1, 1) mpn add_ini [] 0 True z h
+--        | lookupTrue ((m - 1), 1) && x == m && y == n && not h =
+--            go (1, 1) mpn add_ini [] 0 False z h
+--        -- end of finding all paths
+--        | lookupFalse (1, (n - 1)) && x == m && y == n && z /= 0 && h =
+--            go (1, 1) (gridMap (m, n)) add_ini [] 0 True (z - 1) h
+--        | y == 1 && y == n && x == m =
+--            go (0, 0) mpn (rv add_ini) [] 0 right z h
+--        | lookupFalse ((m - 1), 1) && x == m && y == n && z /= 0 && not h =
+--            go (1, 1) (gridMap (m, n)) add_ini [] 0 False (z - 1) h
+--        | x == 1 && y == n && x == m =
+--            go (0, 0) mpn (rv add_ini) [] 0 right z h
+--        | lookupFalse (1, (n - 1)) && x == m && y == n && z == 0 && h =
+--            go (1, 1) (gridMap (m, n)) add_ini [] 0 False (n - 1) False
+--        | lookupFalse ((m - 1), 1) && x == m && y == n && z == 0 && not h =
+--            go (0, 0) mpn (rv add_ini) [] 0 False z h
+--        where
+--            setMapFalse = M.adjust (== False) (x, y) mpn
+--            lookupTrue (v, w) = M.lookup (v, w) mpn == Just True
+--            lookupFalse (v, w) = M.lookup (v, w) mpn == Just False
+--            rv = reverse
+--            add_ini = if rv addXYP `elem` res || k_ > k  then res else (rv addXYP) : res
+--            addXYP = ((x, y), k_) : path
+--            k_nr = if right then k_ else k_ + 1
+--            k_nd = if right then k_ + 1 else k_
+
