@@ -132,10 +132,35 @@ bi_ n x = fac n `div` (fac x * fac (n - x))
 fac = product . flip take [1..]
 
 paths (m, n, k)
+    | m == n && kMax_ <= k = routesM (m, n)
+    | m == n && kMax_ > k = paths' (m, n, k)
+    | m > n && kMaxn <= k = routesM (m, n)
+    | m > n && kMaxn > k = paths' (m, n, k)
+    | m < n && kMaxm <= k = routesM (m, n)
+    | m < n && kMaxm > k = paths' (n, m, k)
+    where
+        kMax_ = (m - 1) + (n - 1) - 1
+        kMaxm = (m - 1) * 2
+        kMaxn = (n - 1) * 2
+
+paths' (m, n, k)
     | k == 0 = 0
+    | m == 1 || n == 1 = 1
+    | k == 1 = k1
+    | k == 2 = k1 + k2
+    | k == 3 = k1 + k2 + k3
+    | k == 4 && m == n = k1 + k2 + k3 + k4
+--    | k == 4 && m < n = k1 + k2 + k3 + k4n
+    | k == 4 && m > n = k1 + k2 + k3 + k4m
     | (k - 1) < (m + n - 3) `quot` 2 = k_calc 
     | otherwise = routesM - k_calc
     where
+        k1 = 2
+        k2 = (m - 2) + (n - 2)
+        k3 = 2 * (m - 2) * (n - 2)
+        k4 = 2 * (m - 2) * (n - 2)
+--        k4n = (m - 3) * (n - 2) + (m - 2) * (n - 2)
+        k4m = (m - 2) * (n - 3) + (m - 2) * (n - 2)
         k_calc = (choose (m - 1) (k - 1)) + (choose (n - 1) (k - 1))
         -- all routes
         routesM = (choose (m + n - 2) (m - 1))
