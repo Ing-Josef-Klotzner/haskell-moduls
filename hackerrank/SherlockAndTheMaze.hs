@@ -139,31 +139,35 @@ paths (m, n, k)
     | m < n && kMaxm <= k = routesM (m, n)
     | m < n && kMaxm > k = paths' (n, m, k)
     where
-        kMax_ = (m - 1) + (n - 1) - 1
+        kMax_ = (m - 1) * 2 - 1
         kMaxm = (m - 1) * 2
         kMaxn = (n - 1) * 2
-
+--  4,  5,  6
+-- 10, 15, 21
+-- 20, 34, 52
 paths' (m, n, k)
     | k == 0 = 0
     | m == 1 || n == 1 = 1
     | k == 1 = k1
     | k == 2 = k1 + k2
     | k == 3 = k1 + k2 + k3
-    | k == 4 && m == n = k1 + k2 + k3 + k4
---    | k == 4 && m < n = k1 + k2 + k3 + k4n
-    | k == 4 && m > n = k1 + k2 + k3 + k4m
+    | k == 4 = (scanl (+) n [(gp1 (6,10,1,4)),(gp2 (8,13,1,4))..]) !! (m - 2)
+    | k == 5 = (scanl (+) n [(gp1 (6,10,1,4)),(gp2 (10,19,3,4))..]) !! (m - 2)
+    | k == 6 = (scanl (+) (routesM (3, n)) [(gp1 (20,35,1,5)),((gp2 (33,61,8,5))+3)..]) !! (m - 3)
     | (k - 1) < (m + n - 3) `quot` 2 = k_calc 
-    | otherwise = routesM - k_calc
+    | otherwise = routesM_ - k_calc
     where
+--        vgp = routesM (3, n) -- ([10,15] ++ (zipWith (+) [20,25..] [1,3..])) !! (n - 4)
+        -- creating list with increasing gaps
+        gp1 (a,b,g,nm) = (scanl (+) a [(b-a),(b-a+g)..]) !! (n - nm)
+        gp2 (c,d,g,nm) = (scanl (+) c [(d-c),(d-c+g)..]) !! (n - nm)
+        bg = if n > 4 then 1 else 0
         k1 = 2
         k2 = (m - 2) + (n - 2)
         k3 = 2 * (m - 2) * (n - 2)
-        k4 = 2 * (m - 2) * (n - 2)
---        k4n = (m - 3) * (n - 2) + (m - 2) * (n - 2)
-        k4m = (m - 2) * (n - 3) + (m - 2) * (n - 2)
         k_calc = (choose (m - 1) (k - 1)) + (choose (n - 1) (k - 1))
         -- all routes
-        routesM = (choose (m + n - 2) (m - 1))
+        routesM_ = (choose (m + n - 2) (m - 1))
 
 table_array2D :: (Enum t, Enum t1, Num t, Num t1, Ix t, Ix t1) =>
                 (t, t1) -> (((t, t1) -> e) -> (t, t1) -> e) -> (t, t1) -> e
