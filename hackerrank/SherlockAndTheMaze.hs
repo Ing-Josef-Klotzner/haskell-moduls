@@ -151,16 +151,19 @@ paths' (m, n, k)
     | k == 3 = k1 + k2 + k3
     | k == 4 = (scanl (+) n [(gp (6,10,1,4)),(gp (8,13,1,4))..]) !! (m - 2)
 --    | k == 5 = (scanl (+) n [(gp (6,10,1,4)),(gp (10,19,3,4))..]) !! (m - 2)
-    | k == 5 = (scanl fgp n [(gp (2,2,(-1),3)),((gp (2,2,(-1),3))+(n-2)^2)..]) !! (m - 2)
-    | k == 6 = (scanl fgp6 (routesM (4, n)) [(gp (26,30,1,4)),(gp6 + gp (26,30,1,4))..]) !! (m - 4)
+    | k == 5 = (scanl (+) n [(gp (6,10,1,4)),((n - 2)^2 + gp (6,10,1,4))..]) !! (m - 2)
+--    | k == 5 = (scanl fgp n [(gp (2,2,(-1),3)),((gp (2,2,(-1),3))+(n-2)^2)..]) !! (m - 2)
+    | k == 6 = var_gp + (scanl (+) n [(gp (6,10,1,4)),(gp6 + gp (6,10,1,4))..]) !! (m - 2)
+    | k == 7 = var_gp7 + (scanl (+) n [routesM (3, (n - 1)),gp6 + routesM (3, (n - 1))..]) !! (m - 2)
     | (k - 1) < (m + n - 3) `quot` 2 = k_calc 
     | otherwise = routesM_ - k_calc
     where
 --        vgp = routesM (3, n) -- ([10,15] ++ (zipWith (+) [20,25..] [1,3..])) !! (n - 4)
-        -- creating list with increasing gaps
         fgp x y = x + y + (n-2)^2
         gp6 = routesM (4, (n - 2))
-        fgp6 x y = x + y + (routesM (3, (n - 3))) * (routesM (3, (m - 4)))
+        var_gp = routesM (3, (n - 3)) * routesM (4, (m - 4))
+        var_gp7 = 2 * (routesM (4, (n - 4))) * routesM (4, (m - 4))  + 8 * routesM (4, (n - 4))
+        -- creating list with increasing gaps
         gp (a,b,g,nm) = (scanl (+) a [(b-a),(b-a+g)..]) !! (n - nm)
         rM = routesM (3, n)
         k1 = 2
