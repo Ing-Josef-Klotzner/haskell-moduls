@@ -155,23 +155,71 @@ paths' (m, n, k)
 --    | k == 5 = (scanl fgp n [(gp (2,2,(-1),3)),((gp (2,2,(-1),3))+(n-2)^2)..]) !! (m - 2)
     | k == 6 = var_gp + (scanl (+) n [(gp (6,10,1,4)),(gp6 + gp (6,10,1,4))..]) !! (m - 2)
     | k == 7 = var_gp7 + (scanl (+) n [routesM (3, (n - 1)),gp6 + routesM (3, (n - 1))..]) !! (m - 2)
+--    | k == 8 = sum $ add_term_list gap8
+
+    | even k = sum $ add_list gap_even
+    | odd k = sum $ add_list gap_odd
+
+    | k == 9 = sum $ add_term_list gap9
+    | k == 10 = sum $ add_term_list10 ggap10
+    | k == 11 = sum $ add_term_list10 ggap11
+    | k == 12 = sum $ add_term_list12 ggap12
     | (k - 1) < (m + n - 3) `quot` 2 = k_calc 
     | otherwise = routesM_ - k_calc
     where
---        vgp = routesM (3, n) -- ([10,15] ++ (zipWith (+) [20,25..] [1,3..])) !! (n - 4)
+        kH = k `quot` 2
+        gap_even = routesM (kH, n - kH)
+        gap_odd = routesM (kH + 1, n - kH) + routesM (kH + 1, n - kH - 1)
+        gap8 = routesM (4,n-4)
+        gap9 = routesM (5,n-4) + routesM (5,n-5)
+        ggap10 = routesM (5, n - 5)
+        ggap11 = routesM (6, n - 5) + routesM (6, n - 6)
+        ggap12 = routesM (6, n - 6)
+
+        gap_list gap = take (m-kH+1) $ scanl (+) gpx [gpx_, gap + gpx_ ..]
+        add_list gap = scanl (+) n ([rM_1 - n] ++ go 0) where
+            go kH4
+                | kH4 >= kH-4 = gap_list gap
+                | otherwise = scanl (+) (routesM (4+kH4,n-2-kH4)) (go (kH4+1))
+
+        gap3_list12 gap = take (m-5) $ scanl (+) gp12 [gp12_, gap + gp12_ ..]
+        gap2_list12 gap = scanl (+) gp10 (gap3_list12 gap)
+        gap_term_list12 gap = scanl (+) gp6 (gap2_list12 gap)
+        add_term_list12 gap = scanl (+) n ([rM_1 - n] ++ gap_term_list12 gap)
+
+        gap2_list gap = take (m-4) $ scanl (+) gp10 [gp10_, gap + gp10_ ..]
+        gap_term_list10 gap = scanl (+) gp6 (gap2_list gap)
+        add_term_list10 gap = scanl (+) n ([rM_1 - n] ++ gap_term_list10 gap)
+
+        gap_term_list gap = take (m-3) $ scanl (+) gp6 [gp6_, gap + gp6_ ..]
+        add_term_list gap = scanl (+) n ([rM_1 - n] ++ gap_term_list gap)
         fgp x y = x + y + (n-2)^2
-        gp6 = routesM (4, (n - 2))
-        var_gp = routesM (3, (n - 3)) * routesM (4, (m - 4))
-        var_gp7 = 2 * (routesM (4, (n - 4))) * routesM (4, (m - 4))  + 8 * routesM (4, (n - 4))
+        gpx = routesM (kH,n-kH+2)
+        gpx_ = routesM (kH+1,n-kH+1)
+        gp12 = routesM (6, n - 4)
+        gp12_ = routesM (7, n - 5)
+        gp10 = routesM (5, n - 3)
+        gp10_ = routesM (6, n - 4)
+        gp6 = routesM (4, n - 2)
+        gp6_ = routesM (5, n - 3)
+        var_gp = routesM (3, n - 3) * routesM (4, m - 4)
+        var_gp7 = gpq (5,3,5) * routesM (4, m - 4)   -- 5 14 30 55 91 140
         -- creating list with increasing gaps
-        gp (a,b,g,nm) = (scanl (+) a [(b-a),(b-a+g)..]) !! (n - nm)
+        gp (a,b,g,nm) = (scanl (+) a [b-a,b-a+g..]) !! (n - nm)
+        -- quadratic increasing gap
+        gpq (a,g,nm) = (scanl (+) a [x^2 | x <- [g,g+1..]]) !! (n - nm)
         rM = routesM (3, n)
+        rM_1 = routesM (3, n - 1)
         k1 = 2
         k2 = (m - 2) + (n - 2)
         k3 = 2 * (m - 2) * (n - 2)
         k_calc = (choose (m - 1) (k - 1)) + (choose (n - 1) (k - 1))
         -- all routes
         routesM_ = (choose (m + n - 2) (m - 1))
+n = 8
+m = 8
+gap_term_list = take (m-3) $ scanl (+) (routesM (4,n-2)) [routesM (5,n-3), routesM (4,n-4) + routesM (5,n-3) ..]
+add_term_list = scanl (+) n ([routesM (3,n-1) - n] ++ gap_term_list)
 
 table_array2D :: (Enum t, Enum t1, Num t, Num t1, Ix t, Ix t1) =>
                 (t, t1) -> (((t, t1) -> e) -> (t, t1) -> e) -> (t, t1) -> e
@@ -277,7 +325,7 @@ main = do
     nkL <- forM [1..t] (\_ -> do fmap (map (read :: String -> Int).words) getLine)
     
 --    putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show (length $ findPaths (n, m, k))) $ nkL
-    putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show (paths (n, m, k))) $ nkL
+    putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show ((paths (n, m, k)) `rem` (10^9+7))) $ nkL
 
 --10
 --1 3 3
