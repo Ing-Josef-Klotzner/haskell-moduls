@@ -131,6 +131,7 @@ bi_ n x = fac n `div` (fac x * fac (n - x))
 -- factorial
 fac = product . flip take [1..]
 
+paths :: (Integer, Integer, Integer) -> Integer
 paths (m, n, k)
     | m == n && kMax_ <= k = routesM (m, n)
     | m == n && kMax_ > k = paths' (m, n, k)
@@ -143,29 +144,28 @@ paths (m, n, k)
         kMaxn = (n - 1) * 2
         kMaxm = (m - 1) * 2
 
+paths' :: (Integer, Integer, Integer) -> Integer
 paths' (m, n, k)
     | k == 0 = 0
     | m == 1 || n == 1 = 1
     | k == 1 = k1
     | k == 2 = k1 + k2
     | k == 3 = k1 + k2 + k3
-    | k == 4 = (scanl (+) n [(gp (6,10,1,4)),(gp (8,13,1,4))..]) !! (m - 2)
---    | k == 5 = (scanl (+) n [(gp (6,10,1,4)),(gp (10,19,3,4))..]) !! (m - 2)
-    | k == 5 = (scanl (+) n [(gp (6,10,1,4)),((n - 2)^2 + gp (6,10,1,4))..]) !! (m - 2)
+    | k == 4 = (scanl (+) n [(gp (6,10,1,4)),(gp (8,13,1,4))..]) !! (fromIntegral(m - 2))
+    | k == 5 = (scanl (+) n [(gp (6,10,1,4)),((n - 2)^2 + gp (6,10,1,4))..]) !! (fromIntegral(m - 2))
 --    | k == 5 = (scanl fgp n [(gp (2,2,(-1),3)),((gp (2,2,(-1),3))+(n-2)^2)..]) !! (m - 2)
-    | k == 6 = var_gp + (scanl (+) n [(gp (6,10,1,4)),(gp6 + gp (6,10,1,4))..]) !! (m - 2)
-    | k == 7 = var_gp7 + (scanl (+) n [routesM (3, (n - 1)),gp6 + routesM (3, (n - 1))..]) !! (m - 2)
---    | k == 8 = sum $ add_term_list gap8
+    | k == 6 = var_gp + (scanl (+) n [(gp (6,10,1,4)),(gp6 + gp (6,10,1,4))..]) !! (fromIntegral (m - 2))
+    | k == 7 = var_gp7 + (scanl (+) n [routesM (3, (n - 1)),gp6 + routesM (3, (n - 1))..]) !! (fromIntegral (m - 2))
+----    | k == 8 = sum $ add_term_list gap8
 
     | even k = sum $ add_list gap_even
     | odd k = sum $ add_list gap_odd
 
-    | k == 9 = sum $ add_term_list gap9
-    | k == 10 = sum $ add_term_list10 ggap10
-    | k == 11 = sum $ add_term_list10 ggap11
-    | k == 12 = sum $ add_term_list12 ggap12
-    | (k - 1) < (m + n - 3) `quot` 2 = k_calc 
-    | otherwise = routesM_ - k_calc
+--    | k == 9 = sum $ add_term_list gap9
+--    | k == 10 = sum $ add_term_list10 ggap10
+--    | k == 11 = sum $ add_term_list10 ggap11
+--    | k == 12 = sum $ add_term_list12 ggap12
+
     where
         kH = k `quot` 2
         gap_even = routesM (kH, n - kH)
@@ -176,22 +176,22 @@ paths' (m, n, k)
         ggap11 = routesM (6, n - 5) + routesM (6, n - 6)
         ggap12 = routesM (6, n - 6)
 
-        gap_list gap = take (m-kH+1) $ scanl (+) gpx [gpx_, gap + gpx_ ..]
+        gap_list gap = take (fromIntegral(m-kH+1)) $ scanl (+) gpx [gpx_, gap + gpx_ ..]
         add_list gap = scanl (+) n ([rM_1 - n] ++ go 0) where
             go kH4
                 | kH4 >= kH-4 = gap_list gap
                 | otherwise = scanl (+) (routesM (4+kH4,n-2-kH4)) (go (kH4+1))
 
-        gap3_list12 gap = take (m-5) $ scanl (+) gp12 [gp12_, gap + gp12_ ..]
+        gap3_list12 gap = take (fromIntegral(m-5)) $ scanl (+) gp12 [gp12_, gap + gp12_ ..]
         gap2_list12 gap = scanl (+) gp10 (gap3_list12 gap)
         gap_term_list12 gap = scanl (+) gp6 (gap2_list12 gap)
         add_term_list12 gap = scanl (+) n ([rM_1 - n] ++ gap_term_list12 gap)
 
-        gap2_list gap = take (m-4) $ scanl (+) gp10 [gp10_, gap + gp10_ ..]
+        gap2_list gap = take (fromIntegral(m-4)) $ scanl (+) gp10 [gp10_, gap + gp10_ ..]
         gap_term_list10 gap = scanl (+) gp6 (gap2_list gap)
         add_term_list10 gap = scanl (+) n ([rM_1 - n] ++ gap_term_list10 gap)
 
-        gap_term_list gap = take (m-3) $ scanl (+) gp6 [gp6_, gap + gp6_ ..]
+        gap_term_list gap = take (fromIntegral(m-3)) $ scanl (+) gp6 [gp6_, gap + gp6_ ..]
         add_term_list gap = scanl (+) n ([rM_1 - n] ++ gap_term_list gap)
         fgp x y = x + y + (n-2)^2
         gpx = routesM (kH,n-kH+2)
@@ -205,17 +205,15 @@ paths' (m, n, k)
         var_gp = routesM (3, n - 3) * routesM (4, m - 4)
         var_gp7 = gpq (5,3,5) * routesM (4, m - 4)   -- 5 14 30 55 91 140
         -- creating list with increasing gaps
-        gp (a,b,g,nm) = (scanl (+) a [b-a,b-a+g..]) !! (n - nm)
+        gp (a,b,g,nm) = (scanl (+) a [b-a,b-a+g..]) !! (fromIntegral(n - nm))
         -- quadratic increasing gap
-        gpq (a,g,nm) = (scanl (+) a [x^2 | x <- [g,g+1..]]) !! (n - nm)
+        gpq (a,g,nm) = (scanl (+) a [x^2 | x <- [g,g+1..]]) !! (fromIntegral (n - nm))
         rM = routesM (3, n)
         rM_1 = routesM (3, n - 1)
         k1 = 2
         k2 = (m - 2) + (n - 2)
         k3 = 2 * (m - 2) * (n - 2)
-        k_calc = (choose (m - 1) (k - 1)) + (choose (n - 1) (k - 1))
-        -- all routes
-        routesM_ = (choose (m + n - 2) (m - 1))
+kH = 9 `quot` 2
 n = 8
 m = 8
 gap_term_list = take (m-3) $ scanl (+) (routesM (4,n-2)) [routesM (5,n-3), routesM (4,n-4) + routesM (5,n-3) ..]
@@ -321,8 +319,9 @@ showPath' (m, n, k) p findPaths = do
 
 main :: IO()
 main = do
+--    putStrLn $ show (findmovesC (12,12,14))
     t <- fmap (read :: String -> Int) getLine
-    nkL <- forM [1..t] (\_ -> do fmap (map (read :: String -> Int).words) getLine)
+    nkL <- forM [1..t] (\_ -> do fmap (map (read :: String -> Integer).words) getLine)
     
 --    putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show (length $ findPaths (n, m, k))) $ nkL
     putStrLn $ intercalate "\n" $ map (\[n, m, k] -> show ((paths (n, m, k)) `rem` (10^9+7))) $ nkL
@@ -359,7 +358,7 @@ main = do
 
 --Turns Down:  (i, j-1)  ->  (i, j)  ->  (i+1, j)
 --                     Right        Dowm
---Given N, M and K, help him by printing the number of ways to reach (N,M) with at most K turns. As this value can be very large, print the answer modulo (109 + 7).
+--Given N, M and K, help him by printing the number of ways to reach (N,M) with at most K turns. As this value can be very large, print the answer modulo (10⁹ + 7).
 
 --Input 
 --First line contains T, the number of testcases. Then T lines follow, where each line represents a test case. Each testcase consists of three space separated integers, N M K, where (N, M) is the final location and K is the maximum number of allowed turns.
