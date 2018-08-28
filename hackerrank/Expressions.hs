@@ -164,7 +164,7 @@ makeExpressions2 t intL = (go bnrx lMap lMap bcnr bmuIL bmnr_keys ([bnr] ++ bmuI
     go n sMap mMap mcnr muIL mnr_keys mmuIL
         | dcalcChkL = if dcalcChkL == calcChkL 
                     then (zipC_ $ mapToL mMap) else "wrong result " ++ (zipC_ $ mapToL mMap)
-        | mcnr < 100 = gom sMap mmuIL
+        | mcnr < 0 = gom sMap mmuIL
         | otherwise = go (n - 1) sMap modi ccnr muIL upmnr_keys mmuIL
         where
         -- finding difference of result to 0 and find out which number to subtract to get result
