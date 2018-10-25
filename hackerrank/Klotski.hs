@@ -107,7 +107,7 @@ allMoves1_ pz = Maybe.catMaybes [moveBlk pz blk dir |
                 dir <- [(0, -1), (0, 1), (-1, 0), (1, 0)]]
 
 
-{-   breadth first search
+{-   breadth first search  (simple - without storing parents)
 1. Define a node to begin search; store it to queue
 2. Take a node from beginning of queue.
     If found searched element, end and return "found"
@@ -126,6 +126,9 @@ addPosition visited (p, parent) = (visited', q)
             q = case old_parent of
                     Nothing -> Just p
                     Just _ -> Nothing
+-- take visited map and list of puzzles with each parent to store to visited map
+-- return updated map and new puzzles (not previously already in visited map)
+-- for processing next level
 addPositions :: (Ord a, Ord t) => M.Map a t -> [(a, t)] -> (M.Map a t, [a])
 addPositions visited [] = (visited, [])
 addPositions visited ((p, parent):ps) = (visited'', qs)
@@ -145,19 +148,45 @@ newPositions visited curr_pzs = addPositions visited (allMoves curr_pzs)
 
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
-findPuzzles targIdx goal start = go (M.singleton start root) [start] where
+findPuzzles targIdx goal blkL start = go (M.singleton start root) [start] where
     go visited pzs
-        | any (isWin targIdx goal) pzs = getPathL
+        | any (isWin targIdx goal) pzs = cvtToOut blkCMovesL
         | otherwise = go visited' pzs' where
         (visited', pzs') = newPositions visited pzs
         winPz = head $ filter (isWin targIdx goal) pzs
+        -- array list of puzzles from start to winning puzzle
         getPathL = go [winPz] where
             go pathL
                 | parent == root = pathL 
                 | otherwise = go (parent : pathL) where
                     parent = visited M.! (head pathL)
+        -- create list of blocks and their single step moves by finding 
+        -- the different blocks of neighboring puzzles of solution path
+        blkMovesL = map blkMove blkLNeighborsL where
+            pzL = map A.assocs getPathL
+            blkLNeighborsL = zip pzL (tail pzL)
+            blkMove (l1, l2) = head $ map cvtToBlkMvs $ filter diffItems $ zip l1 l2 where
+                cvtToBlkMvs ((i, blk), (i1, blk1)) = ((blkL !! (i - 1)), (fst blk), fst blk1)
+                diffItems (x, y) = x /= y
+        -- change to list of blocks with their entire coherently moves (summing single step moves)
+        blkCMovesL = go blkMovesL [] ('x') ((0, 0)) where
+            go [] blkCML _ _ = blkCML
+--            go (last : []) blkCML _ _ = [last]
+            go (blkS @ (blk, from, to) : restBML) blkCML prevBlk saveFrom
+                | blk /= prevBlk && nextBlk /= blk = go restBML (blkCML ++ [blkS]) blk from
+                | blk /= prevBlk && nextBlk == blk = go restBML blkCML blk from
+                | blk == prevBlk && nextBlk == blk = go restBML blkCML blk saveFrom
+                | otherwise = go restBML (blkCML ++ [(blk, saveFrom, to)]) blk from
+                where
+                nextBlk = if restBML /= [] then extractNext restBML else 'n' where
+                    extractNext ((next, _, _) : _) = next
+        cvtToOut blkmvL = show len ++ "\n" ++ (unlines $ map str blkmvL) where
+            len = length blkmvL
+            str (x,y,z) = (x:[]) ++ " " ++ show y ++ " " ++ show z
     root = A.array (0,0) [(0, (start A.! 0) )]
-
+-- blkMovesL:
+-- [('B',(1,1),(1,2)),('A',(0,0),(1,0)),('B',(1,2),(0,2)),('B',(0,2),(0,1)),('B',(0,1),(0,0))]
+-- unlines $ map (\(x,y,z) -> (x:[]) ++ " " ++ show y ++ " " ++ show z) [('B',(1,1),(1,2)),('A',(0,0),(1,0)),('B',(1,2),(0,2)),('B',(0,2),(0,1)),('B',(0,1),(0,0))]
 main :: IO ()
 main = do
     m_nL <- fmap (map (read :: String -> Int).words) getLine
@@ -173,14 +202,16 @@ main = do
         targ = head targS
     let Just targIdx = if mBIdx /= Nothing then mBIdx else Just 1  -- make 1 default, if target not existing
         mBIdx = findIndex (== targ) ('P' : bl)  -- in array first position is puzzledimensions
+    putStrLn $ findPuzzles targIdx goal bl blA
+{-
     putStrLn $ show p ++ "  Target: " ++ show targ ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx
     putStrLn $ "isWin: " ++ show (isWin targIdx goal blA)
     putStrLn $ "BlockMap: " ++ show blM
     putStrLn $ "BlockArray: " ++ show blA
     putStrLn $ "all moves from start: " ++ show (allMoves [blA])
-    putStrLn $ "found: " ++ show (findPuzzles targIdx goal blA)
-
+    putStrLn $ "found: " ++ (findPuzzles targIdx goal bl blA)
+-}
 {-
 *Main> main
 3 4
