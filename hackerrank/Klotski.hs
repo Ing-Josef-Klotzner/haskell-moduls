@@ -202,7 +202,7 @@ main = do
         targ = head targS
     let Just targIdx = if mBIdx /= Nothing then mBIdx else Just 1  -- make 1 default, if target not existing
         mBIdx = findIndex (== targ) ('P' : bl)  -- in array first position is puzzledimensions
-    putStrLn $ findPuzzles targIdx goal bl blA
+    putStr $ findPuzzles targIdx goal bl blA
 {-
     putStrLn $ show p ++ "  Target: " ++ show targ ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx
