@@ -28,11 +28,10 @@ getLn :: Int -> IO [String]
 getLn 0 = return []
 getLn x = do
     cu <- getLine
-    let c = filter (/= ' ') cu
     cs <- getLn (x - 1)
-    return (c:cs)
+    return ([cu] ++ cs)
 
-createBlockMap :: Ord a => [a] -> [[a]] -> M.Map a ((Int, Int), [(Int, Int)])
+createBlockMap :: Ord a => [[a]] -> [[[a]]] -> M.Map [a] ((Int, Int), [(Int, Int)])
 createBlockMap blk pz = go blk 0 0 M.empty where
     lp = length pz
     wp = length (pz !! 0)
@@ -54,7 +53,7 @@ createBlockMap blk pz = go blk 0 0 M.empty where
         blPMap = M.insert b (blockPos, l) blMap
 
 -- element 0 of blockarray holds dimensions of puzzle ((0,0), [(0,0),(y,x)])
-createBlockArray :: Ord a => [a] -> [[a]] -> A.Array Int ((Int, Int), [(Int, Int)])
+createBlockArray :: Ord a => [[a]] -> [[[a]]] -> A.Array Int ((Int, Int), [(Int, Int)])
 createBlockArray blk pz =   let blM = createBlockMap blk pz
                                 getL x = blM M.! x 
                                 arrL = zip [1..] (map getL blk)
@@ -91,13 +90,15 @@ moveBlk pz blk dir
 
 -- Given a list of puzzles, return the list of different
 -- puzzles (with each parent in a tuple) that are reachable from them in exactly one move.
---allMoves :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
---    [A.Array i ((t, t1), [(t, t1)])] -> Set.Set (A.Array i ((t, t1), [(t, t1)]))
+allMoves :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
+    [A.Array i ((t, t1), [(t, t1)])]
+     -> [(A.Array i ((t, t1), [(t, t1)]), A.Array i ((t, t1), [(t, t1)]))]
 allMoves pzs = uniqFstTup $ concatMap allMoves1 pzs where
     allMoves1 pz = zip (Maybe.catMaybes [moveBlk pz blk dir |
                 blk <- tail $ A.indices pz,
                 dir <- [(0, -1), (0, 1), (-1, 0), (1, 0)]]) (repeat pz)
 
+-- not used - just for testing
 -- Given a puzzle, return the list of different
 -- puzzles that are reachable from it (father) in exactly one move.
 allMoves1_ :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
@@ -105,7 +106,6 @@ allMoves1_ :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
 allMoves1_ pz = Maybe.catMaybes [moveBlk pz blk dir |
                 blk <- tail $ A.indices pz,
                 dir <- [(0, -1), (0, 1), (-1, 0), (1, 0)]]
-
 
 {-   breadth first search  (simple - without storing parents)
 1. Define a node to begin search; store it to queue
@@ -121,8 +121,10 @@ allMoves1_ pz = Maybe.catMaybes [moveBlk pz blk dir |
 -- Nothing otherwise.
 addPosition :: (Ord t, Ord t1) => M.Map t t1 -> (t, t1) -> (M.Map t t1, Maybe t)
 addPosition visited (p, parent) = (visited', q)
-      where (old_parent, visited') = M.insertLookupWithKey f p parent visited
-            f _ new old = min new old
+      where old_parent = M.lookup p visited
+            visited' = case old_parent of
+                Nothing -> M.insert p parent visited
+                Just _ -> visited
             q = case old_parent of
                     Nothing -> Just p
                     Just _ -> Nothing
@@ -150,7 +152,7 @@ newPositions visited curr_pzs = addPositions visited (allMoves curr_pzs)
 -- through all reachable puzzles from starting puzzle
 findPuzzles targIdx goal blkL start = go (M.singleton start root) [start] where
     go visited pzs
-        | any (isWin targIdx goal) pzs = cvtToOut blkMovesL
+        | any (isWin targIdx goal) pzs = cvtToOut blkCMovesL
         | otherwise = go visited' pzs' where
         (visited', pzs') = newPositions visited pzs
         winPz = head $ filter (isWin targIdx goal) pzs
@@ -169,7 +171,7 @@ findPuzzles targIdx goal blkL start = go (M.singleton start root) [start] where
                 cvtToBlkMvs ((i, blk), (i1, blk1)) = ((blkL !! (i - 1)), (fst blk), fst blk1)
                 diffItems (x, y) = x /= y
         -- change to list of blocks with their entire coherently moves (summing single step moves)
-        blkCMovesL = go blkMovesL [] ('x') ((0, 0)) where
+        blkCMovesL = go blkMovesL [] ("x") ((0, 0)) where
             go [] blkCML _ _ = blkCML
 --            go (last : []) blkCML _ _ = [last]
             go (blkS @ (blk, from, to) : restBML) blkCML prevBlk saveFrom
@@ -178,37 +180,40 @@ findPuzzles targIdx goal blkL start = go (M.singleton start root) [start] where
                 | blk == prevBlk && nextBlk == blk = go restBML blkCML blk saveFrom
                 | otherwise = go restBML (blkCML ++ [(blk, saveFrom, to)]) blk from
                 where
-                nextBlk = if restBML /= [] then extractNext restBML else 'n' where
+                nextBlk = if restBML /= [] then extractNext restBML else "n" where
                     extractNext ((next, _, _) : _) = next
         cvtToOut blkmvL = show len ++ "\n" ++ (unlines $ map str blkmvL) where
             len = length blkmvL
-            str (x,y,z) = (x:[]) ++ " " ++ show y ++ " " ++ show z
+            str (x,y,z) = x ++ " " ++ show y ++ " " ++ show z
     root = A.array (0,0) [(0, (start A.! 0) )]
 -- blkMovesL:
--- [('B',(1,1),(1,2)),('A',(0,0),(1,0)),('B',(1,2),(0,2)),('B',(0,2),(0,1)),('B',(0,1),(0,0))]
--- unlines $ map (\(x,y,z) -> (x:[]) ++ " " ++ show y ++ " " ++ show z) [('B',(1,1),(1,2)),('A',(0,0),(1,0)),('B',(1,2),(0,2)),('B',(0,2),(0,1)),('B',(0,1),(0,0))]
+-- [("B",(1,1),(1,2)),("A",(0,0),(1,0)),("B",(1,2),(0,2)),("B",(0,2),(0,1)),("B",(0,1),(0,0))]
+-- unlines $ map (\(x,y,z) -> (x:[]) ++ " " ++ show y ++ " " ++ show z) [("B",(1,1),(1,2)),("A",(0,0),(1,0)),("B",(1,2),(0,2)),("B",(0,2),(0,1)),("B",(0,1),(0,0))]
 main :: IO ()
 main = do
     m_nL <- fmap (map (read :: String -> Int).words) getLine
     let m = m_nL !! 0   -- y (lines)
         n = m_nL !! 1   -- x (columns)
     p <- getLn m   -- puzzle (max 6 x 6)
-    let bl = filter (/= '.') $ unique $ concat p   -- blocks f.e. "ABC"  block 'A', 'B', 'C' (max 3 x 3 each)
-        blM = createBlockMap bl p
-        blA = createBlockArray bl p
+        -- blocks f.e. ["A", "B", "C"] (max 3 x 3 each)
+    let bl = unique $ concat $ map (words . filter (/= '.')) p
+        --bl = unique $ concat $ map (filter (/= "") . map (filter (/= '.'))) pz
+        pz = map words p
+        blM = createBlockMap bl pz
+        blA = createBlockArray bl pz
     targS <- getLine
     goalL <- fmap (map (read :: String -> Int).words) getLine
     let goal = (goalL !! 0, goalL !! 1)
-        targ = head targS
     let Just targIdx = if mBIdx /= Nothing then mBIdx else Just 1  -- make 1 default, if target not existing
-        mBIdx = findIndex (== targ) ('P' : bl)  -- in array first position is puzzledimensions
+        mBIdx = findIndex (== targS) (["P"] ++ bl)  -- in array first position is puzzledimensions
     putStr $ findPuzzles targIdx goal bl blA
 {-
-    putStrLn $ show p ++ "  Target: " ++ show targ ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
+    putStrLn $ show (allMoves1_ blA)
+    putStrLn $ show p ++ "  Target: " ++ show targS ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx
+    putStrLn $ "BlockArray: " ++ show blA
     putStrLn $ "isWin: " ++ show (isWin targIdx goal blA)
     putStrLn $ "BlockMap: " ++ show blM
-    putStrLn $ "BlockArray: " ++ show blA
     putStrLn $ "all moves from start: " ++ show (allMoves [blA])
     putStrLn $ "found: " ++ (findPuzzles targIdx goal bl blA)
 -}
@@ -229,6 +234,14 @@ D G H F
 I . . J
 B
 3 1
+
+4 3
+AA AA BB
+CC .. BB
+CC DD DD
+.. .. EE
+EE
+1 1
 
 -}
 {-
