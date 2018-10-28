@@ -98,6 +98,11 @@ allMoves pzs = uniqFstTup $ concatMap allMoves1 pzs where
                 blk <- tail $ A.indices pz,
                 dir <- [(0, -1), (0, 1), (-1, 0), (1, 0)]]) (repeat pz)
 
+allMovesT targIdx pzs = uniqFstTup $ concatMap allMoves1 pzs where
+    allMoves1 pz = zip (Maybe.catMaybes [moveBlk pz blk dir |
+                blk <- [targIdx],
+                dir <- [(0, -1), (0, 1), (-1, 0), (1, 0)]]) (repeat pz)
+
 -- not used - just for testing
 -- Given a puzzle, return the list of different
 -- puzzles that are reachable from it (father) in exactly one move.
@@ -148,32 +153,42 @@ newPositions :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
          [A.Array i ((t, t1), [(t, t1)])])
 newPositions visited curr_pzs = addPositions visited (allMoves curr_pzs)
 
+newPositionsT targIdx visited curr_pzs = addPositions visited (allMovesT targIdx curr_pzs)
+
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
 findPuzzles targIdx goal blkL start = go (M.singleton start root) [start] where
     go visited pzs
-        | any (isWin targIdx goal) pzs = cvtToOut blkCMovesL
-        | otherwise = go visited' pzs' where
+        | any (isWin targIdx goal) pzs = cvtToOut (blkCMovesL visited pzs)
+        -- | any (isWin in DFS / DFS way to goal) pzs ?
+        | otherwise = srchTgtWin where   --go visited' pzs'
+        srchTgtWin = goT visited pzs
+            where
+            goT _ [] = go visited' pzs'
+            goT vstd pzsT
+                | any (isWin targIdx goal) pzsT = cvtToOut (blkCMovesL vstd pzsT)
+                | otherwise = goT visitedT pzs''
+                where
+                (visitedT, pzs'') = newPositionsT targIdx vstd pzsT
         (visited', pzs') = newPositions visited pzs
-        winPz = head $ filter (isWin targIdx goal) pzs
+        winPz pzss = head $ filter (isWin targIdx goal) pzss
         -- array list of puzzles from start to winning puzzle
-        getPathL = go [winPz] where
+        getPathL vstd pzss = go [winPz pzss] where
             go pathL
                 | parent == root = pathL 
                 | otherwise = go (parent : pathL) where
-                    parent = visited M.! (head pathL)
+                parent = vstd M.! (head pathL)
         -- create list of blocks and their single step moves by finding 
         -- the different blocks of neighboring puzzles of solution path
-        blkMovesL = map blkMove blkLNeighborsL where
-            pzL = map A.assocs getPathL
+        blkMovesL vstd pzss = map blkMove blkLNeighborsL where
+            pzL = map A.assocs (getPathL vstd pzss)
             blkLNeighborsL = zip pzL (tail pzL)
             blkMove (l1, l2) = head $ map cvtToBlkMvs $ filter diffItems $ zip l1 l2 where
                 cvtToBlkMvs ((i, blk), (i1, blk1)) = ((blkL !! (i - 1)), (fst blk), fst blk1)
                 diffItems (x, y) = x /= y
         -- change to list of blocks with their entire coherently moves (summing single step moves)
-        blkCMovesL = go blkMovesL [] ("x") ((0, 0)) where
+        blkCMovesL vstd pzss = go (blkMovesL vstd pzss) [] ("x") ((0, 0)) where
             go [] blkCML _ _ = blkCML
---            go (last : []) blkCML _ _ = [last]
             go (blkS @ (blk, from, to) : restBML) blkCML prevBlk saveFrom
                 | blk /= prevBlk && nextBlk /= blk = go restBML (blkCML ++ [blkS]) blk from
                 | blk /= prevBlk && nextBlk == blk = go restBML blkCML blk from
@@ -219,21 +234,24 @@ main = do
 -}
 {-
 *Main> main
+Input:
 3 4
 . A . . 
 A B . C
 . . . C
 B
 0 0
+Output:
+B (1,1) (1,2)
+A (0,0) (1,0)
+B (1,2) (0,0)
 
-5 4
-A B B C
-A B B C
-D E E F
-D G H F
-I . . J
-B
-3 1
+3 6
+A . . . C .
+A . B . C .
+D . B . . .
+D
+0 5
 
 4 3
 AA AA BB
@@ -242,6 +260,24 @@ CC DD DD
 .. .. EE
 EE
 1 1
+
+EE (3,2) (3,0)
+DD (2,1) (3,1)
+BB (0,2) (1,2)
+AA (0,0) (0,1)
+CC (1,0) (0,0)
+EE (3,0) (1,1)
+
+needs to anonymize f.e. A and C, D, F, which are equal (2 vertical) not to be differentiated
+as different puzzles, to shorten run time (can not be solved in hours now)
+5 4
+A B B C
+A B B C
+D E E F
+D G H F
+I . . J
+B
+3 1
 
 -}
 {-
