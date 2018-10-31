@@ -248,11 +248,11 @@ main = do
     let goal = (goalL !! 0, goalL !! 1)
     let Just targIdx = if mBIdx /= Nothing then mBIdx else Just 0  -- make 0 default, if target not existing
         mBIdx = elemIndex targS bl 
-    putStrLn $ "BlockArray: " ++ show blA
-    putStrLn $ "reduced Block List: " ++ show (reduce blA)
     putStr $ findPuzzles (m, n) targIdx goal bl blA
 --    putStr ""
 {-
+    putStrLn $ "BlockArray: " ++ show blA
+    putStrLn $ "reduced Block List: " ++ show (reduce blA)
     putStrLn $ show (allMoves1_ (m, n) blA)
     putStrLn $ show p ++ "  Target: " ++ show targS ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx
