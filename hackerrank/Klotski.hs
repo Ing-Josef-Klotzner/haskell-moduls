@@ -66,7 +66,7 @@ isWin targIdx goal pz = goal == (fst $ pz A.! targIdx)
 
 -- Try to move the blk in in puzzle in direction dir. Return Just the new
 -- puzzle, or Nothing if the move isn’t legal.
-moveBlk :: (Num i, Num t, Num t1, Ord t, Ord t1, A.Ix i) =>
+moveBlk :: (Num t, Num t1, Ord t, Ord t1, A.Ix i) =>
     (t, t1) -> A.Array i ((t, t1), [(t, t1)]) -> i -> (t, t1) -> Maybe (A.Array i ((t, t1), [(t, t1)]))
 moveBlk rlc pz blk dir
     | check = Just $ pz A.// [(blk, (blockPos, poses2))]
@@ -89,7 +89,7 @@ moveBlk rlc pz blk dir
 
 -- Given a list of puzzles, return the list of different
 -- puzzles (with each parent in a tuple) that are reachable from them in exactly one move.
-allMoves :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
+allMoves :: (Num t, Num t1, Ord t, Ord t1, A.Ix i) =>
     (t, t1) -> [A.Array i ((t, t1), [(t, t1)])]
      -> [(A.Array i ((t, t1), [(t, t1)]), A.Array i ((t, t1), [(t, t1)]))]
 allMoves rlc pzs = uniqFstTup $ concatMap allMoves1 pzs where
@@ -105,7 +105,7 @@ allMovesT rlc targIdx pzs = uniqFstTup $ concatMap allMoves1 pzs where
 -- not used - just for testing
 -- Given a puzzle, return the list of different
 -- puzzles that are reachable from it (father) in exactly one move.
-allMoves1_ :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
+allMoves1_ :: (Num t, Num t1, Ord t, Ord t1, A.Ix i) =>
      (t, t1) -> A.Array i ((t, t1), [(t, t1)]) -> [A.Array i ((t, t1), [(t, t1)])]
 allMoves1_ rlc pz = Maybe.catMaybes [moveBlk rlc pz blk dir |
                 blk <- A.indices pz,
@@ -120,14 +120,10 @@ allMoves1_ rlc pz = Maybe.catMaybes [moveBlk rlc pz blk dir |
 4. Repeat from step 2.        
 -}
 
-sFindIndex e s = case found of
-    Just x -> x
-    Nothing -> (-1)   --should never occur
-    where    
-    found = elemIndex e (Set.elems s)
-
 -- Find equal blocks (f.e. two steps vertical), sort and add them to list each
 -- use this as key for map, reducing to maps with same pattern only
+reduce :: (Enum a, Num t, Num t1, Num a, Ord t, Ord t1, Ord a, A.Ix i) =>
+     A.Array i ((t, t1), [(t, t1)]) -> [(a, [[(t, t1)]])]
 reduce pz = go blsL M.empty where
     go [] blM            = M.toList blM
     go (x@(pos, eL):xs) blM = go xs blSM
@@ -148,16 +144,24 @@ reduce pz = go blsL M.empty where
 -- Add puzzle p to the visited map with its parent.
 -- Return the updated map and Just p if p wasn’t previously visited,
 -- Nothing otherwise.
-addPosition :: (Ord t, Ord t1) => M.Map t t1 -> (t, t1) -> (M.Map t t1, Maybe t)
+addPosition :: (Enum a, Num t1, Num t2, Num a, Ord a, Ord t1, Ord t2,
+    A.Ix i) => M.Map [(a, [[(t1, t2)]])] (A.Array i ((t1, t2), [(t1, t2)]), t)
+    -> (A.Array i ((t1, t2), [(t1, t2)]), t)
+    -> (M.Map [(a, [[(t1, t2)]])] (A.Array i ((t1, t2), [(t1, t2)]), t),
+         Maybe (A.Array i ((t1, t2), [(t1, t2)])))
 addPosition visited (p, parent) = (visited', q)
-      where old_parent = M.lookup p visited
-            (visited', q) = case old_parent of
-                Nothing -> (M.insert p parent visited, Just p)
+      where old_p_parent = M.lookup (reduce p) visited
+            (visited', q) = case old_p_parent of
+                Nothing -> (M.insert (reduce p) (p, parent) visited, Just p)
                 Just _ -> (visited, Nothing)
 -- take visited map and list of puzzles with each parent to store to visited map
 -- return updated map and new puzzles (not previously already in visited map)
 -- for processing next level
-addPositions :: (Ord a, Ord t) => M.Map a t -> [(a, t)] -> (M.Map a t, [a])
+addPositions :: (Enum a, Num t1, Num t2, Num a, Ord a, Ord t1, Ord t2,
+    A.Ix i) => M.Map [(a, [[(t1, t2)]])] (A.Array i ((t1, t2), [(t1, t2)]), t)
+    -> [(A.Array i ((t1, t2), [(t1, t2)]), t)]
+    -> (M.Map [(a, [[(t1, t2)]])] (A.Array i ((t1, t2), [(t1, t2)]), t),
+         [A.Array i ((t1, t2), [(t1, t2)])])
 addPositions visited [] = (visited, [])
 addPositions visited ((p, parent):ps) = (visited'', qs)
     where qs = case q of Just p' -> p':ps'
@@ -167,10 +171,10 @@ addPositions visited ((p, parent):ps) = (visited'', qs)
 
 -- Given the map of visited puzzles and the list
 -- of current puzzles, return an updated map with all next moves
-newPositions :: (Num t, Num t1, Num i, Ord t, Ord t1, A.Ix i) =>
-     (t, t1) -> M.Map (A.Array i ((t, t1), [(t, t1)])) (A.Array i ((t, t1), [(t, t1)]))
-     -> [A.Array i ((t, t1), [(t, t1)])]
-     -> (M.Map (A.Array i ((t, t1), [(t, t1)])) (A.Array i ((t, t1), [(t, t1)])),
+newPositions :: (Enum a, Num t, Num t1, Num a, Ord a, Ord t, Ord t1, A.Ix i) =>
+     (t, t1) -> M.Map [(a, [[(t, t1)]])] (A.Array i ((t, t1), [(t, t1)]), A.Array i ((t, t1), [(t, t1)]))
+     -> [A.Array i ((t, t1), [(t, t1)])] -> (M.Map [(a, [[(t, t1)]])]
+           (A.Array i ((t, t1), [(t, t1)]), A.Array i ((t, t1), [(t, t1)])),
          [A.Array i ((t, t1), [(t, t1)])])
 newPositions rlc visited curr_pzs = addPositions visited (allMoves rlc curr_pzs)
 
@@ -178,10 +182,11 @@ newPositionsT rlc targIdx visited curr_pzs = addPositions visited (allMovesT rlc
 
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
-findPuzzles rlc targIdx goal blkL start = go (M.singleton start root) [start] where
+findPuzzles :: (Num t, Num t1, Ord t, Ord t1, Show t, Show t1) =>
+     (t, t1) -> Int -> (t, t1) -> [[Char]] -> A.Array Int ((t, t1), [(t, t1)]) -> [Char]
+findPuzzles rlc targIdx goal blkL start = go (M.singleton (reduce start) (start, root)) [start] where
     go visited pzs
         | any (isWin targIdx goal) pzs = cvtToOut (blkCMovesL visited pzs)
-        -- | any (isWin in DFS / DFS way to goal) pzs ?
         | otherwise = srchTgtWin where   --go visited' pzs'
         -- can target already reach goal
         srchTgtWin = goT visited pzs
@@ -199,7 +204,7 @@ findPuzzles rlc targIdx goal blkL start = go (M.singleton start root) [start] wh
             go pathL
                 | parent == root = pathL 
                 | otherwise = go (parent : pathL) where
-                parent = vstd M.! (head pathL)
+                (pz, parent) = vstd M.! (reduce (head pathL))
         -- create list of blocks and their single step moves by finding 
         -- the different blocks of neighboring puzzles of solution path
         blkMovesL vstd pzss = map blkMove blkLNeighborsL where
