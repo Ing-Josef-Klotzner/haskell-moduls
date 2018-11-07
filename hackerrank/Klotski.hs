@@ -175,14 +175,16 @@ addPosition visited (p, parent) = (visited', q)
 -- optimization: 2 single steps from 2 blocks can be reduced to single steps of just 1 block 
 {-   
 if current A (add (0,-1) pos) == grandpa A pos && current B (add (-1,0) pos) == grandpa B pos ||
-current A (add (-1,0) pos) == grandpa A pos && current B (add (0,-1) pos) == grandpa B pos ||
-current A (add (1,0) pos) == grandpa A pos && current B (add (0,1) pos) == grandpa B pos ||
 current A (add (0,-1) pos) == grandpa A pos && current B (add (1,0) pos) == grandpa B pos ||
+current A (add (1,0) pos) == grandpa A pos && current B (add (0,-1) pos) == grandpa B pos ||
+current A (add (1,0) pos) == grandpa A pos && current B (add (0,1) pos) == grandpa B pos ||
+current A (add (0,1) pos) == grandpa A pos && current B (add (-1,0) pos) == grandpa B pos ||
 current A (add (0,1) pos) == grandpa A pos && current B (add (1,0) pos) == grandpa B pos ||
+current A (add (-1,0) pos) == grandpa A pos && current B (add (0,-1) pos) == grandpa B pos ||
 current A (add (-1,0) pos) == grandpa A pos && current B (add (0,1) pos) == grandpa B pos
 
-[((0,-1), (-1,0)), ((-1,0), (0,-1)), ((1,0), (0,1)),
-((0,-1), (1,0)), ((0,1),  (1,0)), ((-1,0), (0,1))]
+[((0,-1), (-1,0)), ((1, 0), (0,-1)), ((0,1), (-1, 0)), ((-1,0), (0,-1)),
+((0, -1), (1, 0)), ((1, 0), (0, 1)), ((0,1), (1, 0)), ((-1,0), (0,1))]
 
 only if length (A.indices) > 1 and grandpa is not root  (root can be identified f.e. by checking index 0 and index 1 if pos == (0,0):	
 	A: differing position between current and parent
@@ -193,26 +195,81 @@ addPositionM visited (p, parent) = (visited', q)
     where
     old_p_parent = M.lookup (reduce p) visited
     (visited', q) = case old_p_parent of
-        Nothing -> if opti then (visited, Nothing)
+--        Nothing -> (M.insert (reduce p) (p, parent) visited, Just p)
+        Nothing -> if opti && isParentSw && grandPa == rgPsw-- && movedCntBlk parent grandPa == 1 && movedCntBlk p parent == 1
+                    then (visited, Nothing)  --(M.insert (reduce parentSw) (parentSw, grandPa) visited, Just parentSw)
+--                    then (M.insert (reduce pSw) (pSw, parentSw) visited, Just pSw)
                     else (M.insert (reduce p) (p, parent) visited, Just p)
         Just _ -> (visited, Nothing)
     opti
-        | length (A.indices p) > 1 && isNotRoot grandPa = any (==True) $ map comparison dirABlist
+        | lenILp > 1 =   --readParent == parent && 
+            (any (==True) $ map comparison dirABlist)
         | otherwise = False
         where
-        comparison (a, b) = add a curApos == gPaApos && add b curBpos == gPaBpos
-        dirABlist = [((0,-1), (-1,0)), ((-1,0), (0,-1)), ((1,0), (0,1)),
-                    ((0,-1), (1,0)), ((0,1),  (1,0)), ((-1,0), (0,1))]
-    isNotRoot pz = fst (pz A.! 0) /= (0, 0) && fst (pz A.! 1) /= (0, 0)
-    curApos = fst $ p A.! blkA; curBpos = fst $ p A.! blkB
+        comparison (a, b) = add a pApos == gPaApos && add b pBpos == gPaBpos
+        dirABlist = [((0,-1), (-1,0)), ((1, 0), (0,-1)), ((0,1), (-1, 0)), ((-1,0), (0,-1)),
+                    ((0, -1), (1, 0)), ((1, 0), (0, 1)), ((0,1), (1, 0)), ((-1,0), (0,1))]
+    lenILp = length (A.indices p)
+    isNotRoot pz = fst (pz A.! 0) /= (-1, 0)
+--    readParentSw
+--        | isNotRoot parent = M.lookup (reduce parentSw) visited
+--        | otherwise = Nothing
+    readParentSw = M.lookup (reduce parentSw) visited
+    (isParentSw, rgPsw) = case readParentSw of
+        Nothing -> (False, p)
+        Just (_, rgPsw) -> (True, rgPsw)
+    swap = sub pApos pBpos
+--    pAposSw = add swap pApos; pBposSw = sub swap pBpos
+    parAposSw = add swap parApos; parBposSw = sub swap parBpos
+    pSw = p A.// [(blkA, pBelem), (blkB, pAelem)]
+    parentSw = parent A.// [(blkA, (parAposSw, parPosLASw)), (blkB, (parBposSw, parPosLBSw))]
+--    pPosLA = snd $ p A.! blkA; pPosLB = snd $ p A.! blkB 
+    parPosLASw = map (add swap) (snd $ parent A.! blkA); parPosLBSw = map (sub swap) (snd $ parent A.! blkB)
+    pAelem = p A.! blkA; pBelem = p A.! blkB
+    pApos = fst $ p A.! blkA; pBpos = fst $ p A.! blkB
+    parApos = fst $ parent A.! blkA; parBpos = fst $ parent A.! blkB
     gPaApos = fst $ grandPa A.! blkA; gPaBpos = fst $ grandPa A.! blkB
     (readParent, grandPa) = visited M.! (reduce parent) -- parent always existing
     blks = A.indices p
     blkA = movedBlk p parent; blkB = movedBlk parent grandPa
+--    root_ = A.array (A.bounds p) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices p]
     movedBlk p1 p2 = sum $ map map_f blks
         where
-	    map_f blk = if fil blk then blk else 0
-	    fil bl = p1 A.! bl /= p2 A.! bl
+        map_f blk = if fil blk then blk else 0
+        fil bl = p1 A.! bl /= p2 A.! bl
+    movedCntBlk p1 p2 = sum $ map map_f blks
+        where
+        map_f blk = if fil blk then 1 else 0
+        fil bl = p1 A.! bl /= p2 A.! bl
+{-
+let p = A.array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((4,1),[(4,1)])),(8,((3,1),[(3,1)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
+let parent = A.array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((4,1),[(4,1)])),(8,((3,2),[(3,2)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
+let grandPa = A.array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((3,1),[(3,1)])),(8,((3,2),[(3,2)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
+let blks = A.indices p
+:{
+let movedBlk p1 p2 = sum $ map map_f blks
+        where
+        map_f blk = if fil blk then blk else 0
+        fil bl = p1 A.! bl /= p2 A.! bl
+:}
+let blkA = movedBlk p parent; blkB = movedBlk parent grandPa
+let dirABlist = [((0,1), (-1,0))]
+let isNotRoot pz = fst (pz A.! 0) /= (-1, 0)
+let curApos = fst $ p A.! blkA; curBpos = fst $ p A.! blkB
+let gPaApos = fst $ grandPa A.! blkA; gPaBpos = fst $ grandPa A.! blkB
+let root = A.array (A.bounds p) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices p]
+:{
+let opti
+        | length (A.indices p) > 1 && isNotRoot grandPa =   
+            any (==True) $ map comparison dirABlist   -- && readParent == parent
+        | otherwise = False
+        where
+        comparison (a, b) = add a curApos == gPaApos && add b curBpos == gPaBpos
+:}
+
+}
+-}
+
 -- just reducing multiple steps to 1 move -- blkMovesL is much faster on end, doing this job - and correct
 -- leaving ABAB instead of AB
 addPosition3 :: VMap -> (PArray, PArray) -> (VMap, Maybe PArray)
@@ -355,7 +412,7 @@ DW 4
             len = length blkmvL
             str (x,y,z) = x ++ " " ++ show y ++ " " ++ show z
 --    root = A.array (0,0) [(0, ((0,0), [(0,0),rlc]) )]
-    root = A.array (A.bounds start) [(blki,((0::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices start]
+    root = A.array (A.bounds start) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices start]
 -- blkStepsL:
 -- [("B",(1,1),(1,2)),("A",(0,0),(1,0)),("B",(1,2),(0,2)),("B",(0,2),(0,1)),("B",(0,1),(0,0))]
 -- unlines $ map (\(x,y,z) -> (x:[]) ++ " " ++ show y ++ " " ++ show z) [("B",(1,1),(1,2)),("A",(0,0),(1,0)),("B",(1,2),(0,2)),("B",(0,2),(0,1)),("B",(0,1),(0,0))]
