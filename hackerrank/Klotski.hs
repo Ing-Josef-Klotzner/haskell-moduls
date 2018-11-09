@@ -327,8 +327,8 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
             where
             goT _ [] = go visited' pzs'  -- go1 visited' pzs'  -- with 2 steps / 2 step move
             goT vstd pzsT
-                | any (isWin goal) pzsT = cvtToOut (blkMovesL vstd (minimum $ winPz pzsT))
---                | any (isWin goal) pzsT = concatMap cvt_bMLT (winPz pzsT)
+--                | any (isWin goal) pzsT = cvtToOut (blkMovesL vstd (minimum $ winPz pzsT))
+                | any (isWin goal) pzsT = concatMap cvt_bMLT (winPz pzsT)
                 | otherwise = goT visitedT pzs''
                 where
                 cvt_bMLT x = cvtToOut (blkMovesL vstd x)
@@ -354,8 +354,8 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
         blkMovesL vstd pzss = go (blkStepsL vstd pzss) [] ("x") (0, 0) where
             go [] blkCML _ _ = blkCML
             go blkML@(blkS@(blk, from, to) : restBML) blkCML prevBlk saveFrom
-                | t5Blk /= [] && chkt5Blk = go (chgd5Blk ++ restOf5BML) blkCML prevBlk saveFrom
-                | t3Blk /= [] && chkt3Blk = go (chgd3Blk ++ restOf3BML) blkCML prevBlk saveFrom
+                | t5Blk /= [] && chkt5Blk = go (chgd5Blk ++ restOf5BML) blkCML blk saveFrom
+                | t3Blk /= [] && chkt3Blk = go (chgd3Blk ++ restOf3BML) blkCML blk saveFrom
                 | blk /= prevBlk && nextBlk /= blk = go restBML (blkCML ++ [blkS]) blk from
                 | blk /= prevBlk && nextBlk == blk = go restBML blkCML blk from
                 | blk == prevBlk && nextBlk == blk = go restBML blkCML blk saveFrom
@@ -369,7 +369,7 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
                     | otherwise = []
                 restOf5BML = drop 5 blkML
                 restOf3BML = drop 3 blkML
-                chkt5Blk = n51 == n4 && n52 == n5 && blks5NotOverlap
+                chkt5Blk = n51 == n4 && n52 == n5 && n1 /= n2 && n1 /= n3 && blks5NotOverlap
                 -- and all blkPL of n4 "to" not in n2 "from" and "to" blkPL and
                                           --not in n3 "from" and "to" blkPL and
                     -- all blkPL of n5 "to" not in n3 "from" and "to" blkPL
@@ -379,7 +379,7 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
                                 allBlkPL_NotIn (nXYblkPL n4 t4) (nXYblkPL n53 t53) &&
                                 allBlkPL_NotIn (nXYblkPL n5 t5) (nXYblkPL n53 f53) &&
                                 allBlkPL_NotIn (nXYblkPL n5 t5) (nXYblkPL n53 t53)
-                chkt3Blk = n1 == n3 && blks3NotOverlap
+                chkt3Blk = n1 == n3 && n1 /= n2 && blks3NotOverlap
                 -- and all blkPL of n3 "to" not in n2 "from" and "to" blkPL
                 blks3NotOverlap = allBlkPL_NotIn (nXYblkPL n3 t3) (nXYblkPL n2 f2) && 
                                 allBlkPL_NotIn (nXYblkPL n3 t3) (nXYblkPL n2 t2)
