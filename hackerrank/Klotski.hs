@@ -9,6 +9,7 @@ type PArray = A.Array Int ((Int, Int), [(Int, Int)])
 type Coord = (Int, Int)
 type VMap = M.Map VMapKey (PArray, PArray)
 type VMapKey = [[[Coord]]]
+type OneBlkA = A.Array Int Bool
 
 -- Vector addition.
 add (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
@@ -190,30 +191,71 @@ only if length (A.indices) > 1 and grandpa is not root  (root can be identified 
 	A: differing position between current and parent
 	B: differing position between parent and grandpa 
 -}
-addPositionM :: VMap -> (PArray, PArray) -> (VMap, Maybe PArray)
-addPositionM visited (p, parent) = (visited', q)
+addPositionM :: OneBlkA -> VMap -> (PArray, PArray) -> (VMap, Maybe PArray)
+addPositionM oneBlkA visited (p, parent) = (visited', q)
     where
     old_p_parent = M.lookup (reduce p) visited
     (visited', q) = case old_p_parent of
 --        Nothing -> (M.insert (reduce p) (p, parent) visited, Just p)
-        Nothing -> if opti && isParentSw && grandPa == rgPsw-- && movedCntBlk parent grandPa == 1 && movedCntBlk p parent == 1
-                    then (visited, Nothing)  --(M.insert (reduce parentSw) (parentSw, grandPa) visited, Just parentSw)
---                    then (M.insert (reduce pSw) (pSw, parentSw) visited, Just pSw)
+        Nothing -> if blkBi <= snd (A.bounds p)
+            then if isOneBlk blkAi blkBi && sameBlock p parent grandPa
+                then (M.insert (reduce p) (p, parent) visited, Just p)
+                else if sameBlock pSw parentSw grandPa -- opti muss vorher rein
+                    then if movedCntBlk parent grandPa < 2 && opti && isParentSw
+                            then (M.insert (reduce pSw) (pSw, grandPa) visited, Just pSw)
+                            else (visited, Nothing)
                     else (M.insert (reduce p) (p, parent) visited, Just p)
+            else (M.insert (reduce p) (p, parent) visited, Just p)
+
         Just _ -> (visited, Nothing)
+--        Just (oldP, oldParent) -> if oBlkBi <= snd (A.bounds p)
+--            then if sameBlock oldP oldParent oldGrandPa
+--                then (visited, Nothing)
+--                else if isOneBlk oBlkAi oBlkBi && sameBlock opSw oparentSw oldGrandPa && oldGrandPa /= p
+--                    then if movedCntBlk oldParent oldGrandPa < 2 && oopti && isoParentSw
+--                            then (M.insert (reduce opSw) (opSw, oldGrandPa) visited, Just opSw)
+--                            else (visited, Nothing)
+--                    else (visited, Nothing)
+--            else (visited, Nothing)
+--                where
+--                readoldParentm = M.lookup (reduce oldParent) visited
+--                (_, oldGrandPa) = case readoldParentm of
+--                    Nothing -> (p, p)
+--                    Just (readOP, oldGrandPa) -> (readOP, oldGrandPa)
+----                (_, oldGrandPa) = visited M.! (reduce oldParent)
+--                oBlkAi = movedBlk oldP oldParent; oBlkBi = movedBlk oldParent oldGrandPa
+--                opSw = oldP A.// [(oBlkAi, opBelem), (oBlkBi, opAelem)]
+--                oparentSw = oldParent A.// [(oBlkAi, (oparAposSw, oparPosLASw)), (oBlkBi, (oparBposSw, oparPosLBSw))]
+--                opAelem = oldP A.! oBlkAi; opBelem = oldP A.! oBlkBi
+--                oparAposSw = add oswap oparApos; oparBposSw = sub oswap oparBpos
+--                oparApos = fst $ oldParent A.! oBlkAi; oparBpos = fst $ oldParent A.! oBlkBi
+--                oparPosLASw = map (add oswap) (snd $ oldParent A.! oBlkAi)
+--                oparPosLBSw = map (sub oswap) (snd $ oldParent A.! oBlkBi)
+--                oswap = sub opApos opBpos
+--                opApos = fst $ oldP A.! oBlkAi; opBpos = fst $ oldP A.! oBlkBi
+--                ogPaApos = fst $ oldGrandPa A.! oBlkAi; ogPaBpos = fst $ oldGrandPa A.! oBlkBi
+--                oopti
+--                    | lenILp > 1 =   --readParent == parent && 
+--                        (any (==True) $ map comparison_ dirABlist)
+--                    | otherwise = False
+--                    where
+--                    comparison_ (a, b) = add a opApos == ogPaApos && add b opBpos == ogPaBpos
+--                readParentSw = M.lookup (reduce oparentSw) visited
+--                (isoParentSw, rgPsw) = case readParentSw of
+--                    Nothing -> (False, p)
+--                    Just (_, rogPsw) -> (True, rogPsw)
     opti
         | lenILp > 1 =   --readParent == parent && 
             (any (==True) $ map comparison dirABlist)
         | otherwise = False
         where
         comparison (a, b) = add a pApos == gPaApos && add b pBpos == gPaBpos
-        dirABlist = [((0,-1), (-1,0)), ((1, 0), (0,-1)), ((0,1), (-1, 0)), ((-1,0), (0,-1)),
-                    ((0, -1), (1, 0)), ((1, 0), (0, 1)), ((0,1), (1, 0)), ((-1,0), (0,1))]
+    dirABlist = [((0,-1), (-1,0)), ((1, 0), (0,-1)), ((0,1), (-1, 0)), ((-1,0), (0,-1)),
+                ((0, -1), (1, 0)), ((1, 0), (0, 1)), ((0,1), (1, 0)), ((-1,0), (0,1))]
+    isOneBlk blkAi_ blkBi_ = oneBlkA A.! blkAi_ && oneBlkA A.! blkBi_
+    sameBlock px par gPar = movedBlk px par == movedBlk par gPar
     lenILp = length (A.indices p)
-    isNotRoot pz = fst (pz A.! 0) /= (-1, 0)
---    readParentSw
---        | isNotRoot parent = M.lookup (reduce parentSw) visited
---        | otherwise = Nothing
+--    isNotRoot pz = fst (pz A.! 0) /= (-1, 0)
     readParentSw = M.lookup (reduce parentSw) visited
     (isParentSw, rgPsw) = case readParentSw of
         Nothing -> (False, p)
@@ -221,18 +263,18 @@ addPositionM visited (p, parent) = (visited', q)
     swap = sub pApos pBpos
 --    pAposSw = add swap pApos; pBposSw = sub swap pBpos
     parAposSw = add swap parApos; parBposSw = sub swap parBpos
-    pSw = p A.// [(blkA, pBelem), (blkB, pAelem)]
-    parentSw = parent A.// [(blkA, (parAposSw, parPosLASw)), (blkB, (parBposSw, parPosLBSw))]
---    pPosLA = snd $ p A.! blkA; pPosLB = snd $ p A.! blkB 
-    parPosLASw = map (add swap) (snd $ parent A.! blkA); parPosLBSw = map (sub swap) (snd $ parent A.! blkB)
-    pAelem = p A.! blkA; pBelem = p A.! blkB
-    pApos = fst $ p A.! blkA; pBpos = fst $ p A.! blkB
-    parApos = fst $ parent A.! blkA; parBpos = fst $ parent A.! blkB
-    gPaApos = fst $ grandPa A.! blkA; gPaBpos = fst $ grandPa A.! blkB
-    (readParent, grandPa) = visited M.! (reduce parent) -- parent always existing
+    pSw = p A.// [(blkAi, pBelem), (blkBi, pAelem)]
+    parentSw = parent A.// [(blkAi, (parAposSw, parPosLASw)), (blkBi, (parBposSw, parPosLBSw))]
+--    pPosLA = snd $ p A.! blkAi; pPosLB = snd $ p A.! blkBi 
+    parPosLASw = map (add swap) (snd $ parent A.! blkAi); parPosLBSw = map (sub swap) (snd $ parent A.! blkBi)
+    pAelem = p A.! blkAi; pBelem = p A.! blkBi
+    pApos = fst $ p A.! blkAi; pBpos = fst $ p A.! blkBi
+    parApos = fst $ parent A.! blkAi; parBpos = fst $ parent A.! blkBi
+    gPaApos = fst $ grandPa A.! blkAi; gPaBpos = fst $ grandPa A.! blkBi
+    (_, grandPa) = visited M.! (reduce parent) -- parent always existing
     blks = A.indices p
-    blkA = movedBlk p parent; blkB = movedBlk parent grandPa
---    root_ = A.array (A.bounds p) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices p]
+    blkAi = movedBlk p parent; blkBi = movedBlk parent grandPa
+----    root_ = A.array (A.bounds p) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices p]
     movedBlk p1 p2 = sum $ map map_f blks
         where
         map_f blk = if fil blk then blk else 0
@@ -300,19 +342,27 @@ addPositions visited ((p, parent):ps) = (visited'', qs)
     where qs = case q of Just p' -> p':ps'
                          Nothing -> ps'
           (visited', ps') = addPositions visited ps
-          (visited'', q) = addPositionM visited' (p, parent)
+          (visited'', q) = addPosition visited' (p, parent)
+addPositionsM :: OneBlkA -> VMap -> [(PArray, PArray)] -> (VMap, [PArray])
+addPositionsM oneBlkA visited [] = (visited, [])
+addPositionsM oneBlkA visited ((p, parent):ps) = (visited'', qs)
+    where qs = case q of Just p' -> p':ps'
+                         Nothing -> ps'
+          (visited', ps') = addPositionsM oneBlkA visited ps
+          (visited'', q) = addPositionM oneBlkA visited' (p, parent)
 
 -- Given the map of visited puzzles and the list
 -- of current puzzles, return an updated map with all next moves
 newPositions :: Coord -> VMap -> [PArray] -> (VMap,[PArray])
 newPositions rlc visited curr_pzs = addPositions visited (allMoves rlc curr_pzs)
+newPositionsM oneBlkA rlc visited curr_pzs = addPositionsM oneBlkA visited (allMoves rlc curr_pzs)
 
 newPositionsT rlc visited curr_pzs = addPositions visited (allMovesT rlc curr_pzs)
 
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
-findPuzzles :: Coord -> Coord -> [[Char]] -> PArray -> [Char]
-findPuzzles rlc goal blkL start = go (M.singleton (reduce start) (start, root)) [start] where
+findPuzzles :: OneBlkA -> Coord -> Coord -> [[Char]] -> PArray -> [Char]
+findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start, root)) [start] where
     go visited pzs
         | any (isWin goal) pzs = cvtToOut (blkMovesL visited (head $ winPz pzs))
 --        | any (isWin goal) pzs = concat $ map (\x -> cvtToOut (blkMovesL visited x) ) (winPz pzs)
@@ -327,7 +377,8 @@ findPuzzles rlc goal blkL start = go (M.singleton (reduce start) (start, root)) 
                 | otherwise = goT visitedT pzs''
                 where
                 (visitedT, pzs'') = newPositionsT rlc vstd pzsT
-        (visited', pzs') = newPositions rlc visited pzs
+--        (visited', pzs') = newPositions rlc visited pzs         -- for single steps
+        (visited', pzs') = newPositionsM oneBlkA rlc visited pzs  -- for multiple steps move
         winPz pzss = filter (isWin goal) pzss
         -- array list of puzzles from start to winning puzzle
         getPathL vstd pzss = go [pzss] where
@@ -441,17 +492,20 @@ main = do
         pz = map words p
         blM = createBlockMap bl pz
         blA = createBlockArray bl pz
+        isOneBlk (i, x) = (i, (length $ snd x) == 1)
+        oneBlkA = A.array (A.bounds blA) (map isOneBlk (A.assocs blA))
         goal = (goalL !! 0, goalL !! 1)
-    putStrLn $ "BlockArray: " ++ show blA
+    putStrLn $ "Block Array: " ++ show blA
+    putStrLn $ "OneBlock Array: " ++ show oneBlkA
     putStrLn $ "reduced Block List: " ++ show (reduce blA)
     putStrLn $ show p ++ "  Target: " ++ show targS ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx ++ " changed to 0"
-    putStr $ findPuzzles (m, n) goal bl blA
+    putStrLn $ "BlockMap: " ++ show blM
+    putStr $ findPuzzles oneBlkA (m, n) goal bl blA
 --    putStr ""
 {-
     putStrLn $ show (allMoves1_ (m, n) blA)
     putStrLn $ "isWin: " ++ show (isWin goal blA)
-    putStrLn $ "BlockMap: " ++ show blM
     putStrLn $ "all moves from start: " ++ show (allMoves (m, n) [blA])
 -}
 {-
