@@ -327,8 +327,8 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
             where
             goT _ [] = go visited' pzs'  -- go1 visited' pzs'  -- with 2 steps / 2 step move
             goT vstd pzsT
---                | any (isWin goal) pzsT = cvtToOut (blkMovesL vstd (minimum $ winPz pzsT))
-                | any (isWin goal) pzsT = concatMap cvt_bMLT (winPz pzsT)
+                | any (isWin goal) pzsT = cvtToOut (blkMovesL vstd (minimum $ winPz pzsT))
+--                | any (isWin goal) pzsT = concatMap cvt_bMLT (winPz pzsT)
                 | otherwise = goT visitedT pzs''
                 where
                 cvt_bMLT x = cvtToOut (blkMovesL vstd x)
@@ -354,8 +354,8 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
         blkMovesL vstd pzss = go (blkStepsL vstd pzss) [] ("x") (0, 0) where
             go [] blkCML _ _ = blkCML
             go blkML@(blkS@(blk, from, to) : restBML) blkCML prevBlk saveFrom
-                | t5Blk /= [] && chkt5Blk = go (chgd5Blk ++ restOf5BML) blkCML blk saveFrom
-                | t3Blk /= [] && chkt3Blk = go (chgd3Blk ++ restOf3BML) blkCML blk saveFrom
+                | t5Blk /= [] && chkt5Blk = go (chgd5Blk ++ restOf5BML) blkCML prevBlk saveFrom
+                | t3Blk /= [] && chkt3Blk = go (chgd3Blk ++ restOf3BML) blkCML prevBlk saveFrom
                 | blk /= prevBlk && nextBlk /= blk = go restBML (blkCML ++ [blkS]) blk from
                 | blk /= prevBlk && nextBlk == blk = go restBML blkCML blk from
                 | blk == prevBlk && nextBlk == blk = go restBML blkCML blk saveFrom
