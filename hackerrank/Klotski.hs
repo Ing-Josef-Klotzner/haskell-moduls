@@ -174,23 +174,6 @@ addPosition visited (p, parent) = (visited', q)
 --     else return the updated map and Just p if p wasn’t previously visited
 -- Otherwise do not update map and return Nothing. Use addPosition for single steps mode
 -- optimization: 2 single steps from 2 blocks can be reduced to single steps of just 1 block 
-{-   
-if current A (add (0,-1) pos) == grandpa A pos && current B (add (-1,0) pos) == grandpa B pos ||
-current A (add (0,-1) pos) == grandpa A pos && current B (add (1,0) pos) == grandpa B pos ||
-current A (add (1,0) pos) == grandpa A pos && current B (add (0,-1) pos) == grandpa B pos ||
-current A (add (1,0) pos) == grandpa A pos && current B (add (0,1) pos) == grandpa B pos ||
-current A (add (0,1) pos) == grandpa A pos && current B (add (-1,0) pos) == grandpa B pos ||
-current A (add (0,1) pos) == grandpa A pos && current B (add (1,0) pos) == grandpa B pos ||
-current A (add (-1,0) pos) == grandpa A pos && current B (add (0,-1) pos) == grandpa B pos ||
-current A (add (-1,0) pos) == grandpa A pos && current B (add (0,1) pos) == grandpa B pos
-
-[((0,-1), (-1,0)), ((1, 0), (0,-1)), ((0,1), (-1, 0)), ((-1,0), (0,-1)),
-((0, -1), (1, 0)), ((1, 0), (0, 1)), ((0,1), (1, 0)), ((-1,0), (0,1))]
-
-only if length (A.indices) > 1 and grandpa is not root  (root can be identified f.e. by checking index 0 and index 1 if pos == (0,0):	
-	A: differing position between current and parent
-	B: differing position between parent and grandpa 
--}
 addPositionM :: OneBlkA -> VMap -> (PArray, PArray) -> (VMap, Maybe PArray)
 addPositionM oneBlkA visited (p, parent) = (visited', q)
     where
@@ -206,6 +189,7 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
             else (M.insert (reduce p) (p, parent) visited, Just p)
 
         Just _ -> (visited, Nothing)
+        -- also correct working, but 15 % slower than solution in Nothing part
 --        Just (oldP, oldParent) -> if oBlkBi <= snd (A.bounds p)
 --            then if sameBlock oldP oldParent oldGrandPa
 --                then (visited, Nothing)
@@ -281,34 +265,6 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
         where
         map_f blk = if fil blk then 1 else 0
         fil bl = p1 A.! bl /= p2 A.! bl
-{-
-let p = A.array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((4,1),[(4,1)])),(8,((3,1),[(3,1)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
-let parent = A.array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((4,1),[(4,1)])),(8,((3,2),[(3,2)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
-let grandPa = A.array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((3,1),[(3,1)])),(8,((3,2),[(3,2)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
-let blks = A.indices p
-:{
-let movedBlk p1 p2 = sum $ map map_f blks
-        where
-        map_f blk = if fil blk then blk else 0
-        fil bl = p1 A.! bl /= p2 A.! bl
-:}
-let blkA = movedBlk p parent; blkB = movedBlk parent grandPa
-let dirABlist = [((0,1), (-1,0))]
-let isNotRoot pz = fst (pz A.! 0) /= (-1, 0)
-let curApos = fst $ p A.! blkA; curBpos = fst $ p A.! blkB
-let gPaApos = fst $ grandPa A.! blkA; gPaBpos = fst $ grandPa A.! blkB
-let root = A.array (A.bounds p) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices p]
-:{
-let opti
-        | length (A.indices p) > 1 && isNotRoot grandPa =   
-            any (==True) $ map comparison dirABlist   -- && readParent == parent
-        | otherwise = False
-        where
-        comparison (a, b) = add a curApos == gPaApos && add b curBpos == gPaBpos
-:}
-
-}
--}
 
 -- just reducing multiple steps to 1 move -- blkMovesL is much faster on end, doing this job - and correct
 -- leaving ABAB instead of AB
@@ -362,18 +318,20 @@ newPositionsT rlc visited curr_pzs = addPositions visited (allMovesT rlc curr_pz
 findPuzzles :: OneBlkA -> Coord -> Coord -> [[Char]] -> PArray -> [Char]
 findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start, root)) [start] where
     go visited pzs
-        | any (isWin goal) pzs = cvtToOut (blkMovesL visited (head $ winPz pzs))
---        | any (isWin goal) pzs = concat $ map (\x -> cvtToOut (blkMovesL visited x) ) (winPz pzs)
+        | any (isWin goal) pzs = cvtToOut (blkMovesL visited (minimum $ winPz pzs))
+--        | any (isWin goal) pzs = concatMap cvt_bML (winPz pzs)
         | otherwise = srchTgtWin where   --go visited' pzs'
         -- can target already reach goal?
+        cvt_bML x = cvtToOut (blkMovesL visited x)
         srchTgtWin = goT visited pzs
             where
             goT _ [] = go visited' pzs'  -- go1 visited' pzs'  -- with 2 steps / 2 step move
             goT vstd pzsT
---                | any (isWin goal) pzsT = cvtToOut (blkMovesL vstd (head $ winPz pzsT))
-                | any (isWin goal) pzsT = concat $ map (\x -> cvtToOut (blkMovesL vstd x) ) (winPz pzsT)
+                | any (isWin goal) pzsT = cvtToOut (blkMovesL vstd (minimum $ winPz pzsT))
+--                | any (isWin goal) pzsT = concatMap cvt_bMLT (winPz pzsT)
                 | otherwise = goT visitedT pzs''
                 where
+                cvt_bMLT x = cvtToOut (blkMovesL vstd x)
                 (visitedT, pzs'') = newPositionsT rlc vstd pzsT
 --        (visited', pzs') = newPositions rlc visited pzs         -- for single steps
         (visited', pzs') = newPositionsM oneBlkA rlc visited pzs  -- for multiple steps move
@@ -445,26 +403,13 @@ DB (2,2) (3,2) - -> DW (4,2) (4,1)  -->  Dw (3,2) (4,1)
 DW (4,2) (4,1) - -> DB (2,2) (3,2)
 
 DB (3,2) (4,2)      DB (3,2) (4,2)  -->  DB (2,2) (4,2)
-
-DW 4 (3,2) (4,2) | 
-KW 3 (3,1) (3,2) reduce to KW 3 (3,1) (4,2)   stay with DW
- ... swap all further DW and KW
-DW 4 
-
--- DK..  DK..
--- D.K.
--- .DK.  D..K
--- .D.K
--- ..DK  ..DK
 -}
         cvtToOut blkmvL = show len ++ "\n" ++ (unlines $ map str blkmvL) where
             len = length blkmvL
             str (x,y,z) = x ++ " " ++ show y ++ " " ++ show z
---    root = A.array (0,0) [(0, ((0,0), [(0,0),rlc]) )]
     root = A.array (A.bounds start) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices start]
 -- blkStepsL:
 -- [("B",(1,1),(1,2)),("A",(0,0),(1,0)),("B",(1,2),(0,2)),("B",(0,2),(0,1)),("B",(0,1),(0,0))]
--- unlines $ map (\(x,y,z) -> (x:[]) ++ " " ++ show y ++ " " ++ show z) [("B",(1,1),(1,2)),("A",(0,0),(1,0)),("B",(1,2),(0,2)),("B",(0,2),(0,1)),("B",(0,1),(0,0))]
 
 allBlkPL_NotIn :: Eq a => [a] -> [a] -> Bool
 allBlkPL_NotIn a b = all (== True) [all (/=x) b | x <- a]
@@ -493,15 +438,15 @@ main = do
         isOneBlk (i, x) = (i, (length $ snd x) == 1)
         oneBlkA = A.array (A.bounds blA) (map isOneBlk (A.assocs blA))
         goal = (goalL !! 0, goalL !! 1)
+    putStr $ findPuzzles oneBlkA (m, n) goal bl blA
+--    putStr ""
+{-
     putStrLn $ "Block Array: " ++ show blA
     putStrLn $ "OneBlock Array: " ++ show oneBlkA
     putStrLn $ "reduced Block List: " ++ show (reduce blA)
     putStrLn $ show p ++ "  Target: " ++ show targS ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx ++ " changed to 0"
     putStrLn $ "BlockMap: " ++ show blM
-    putStr $ findPuzzles oneBlkA (m, n) goal bl blA
---    putStr ""
-{-
     putStrLn $ show (allMoves1_ (m, n) blA)
     putStrLn $ "isWin: " ++ show (isWin goal blA)
     putStrLn $ "all moves from start: " ++ show (allMoves (m, n) [blA])
@@ -519,8 +464,6 @@ Output:
 B (1,1) (1,2)
 A (0,0) (1,0)
 B (1,2) (0,0)
-
-let pz = A.array (0::Int,1) [(0,((0::Int,0::Int),[(0::Int,0::Int)])),(1,((1,0),[(1,0),(1,1),(1,2)]))] 
 
 3 6
 A . . . C .
@@ -589,9 +532,34 @@ B
 3 1
 
 28
-KW 3 (3,1) (4,2)
-KB 1 (2,1) (4,1)
-TW D (3,1) (3,0){-truncated-}
+DW (3,2) (4,1)
+DB (2,2) (4,2)
+TB (2,3) (2,2)
+RW (0,3) (2,3)
+BW (0,1) (0,2)
+KB (2,1) (0,1)
+KW (3,1) (1,1)
+DW (4,1) (2,1)
+DB (4,2) (3,1)
+LW (4,3) (4,1)
+RW (2,3) (3,3)
+TB (2,2) (3,2)
+BW (0,2) (1,2)
+KB (0,1) (0,3)
+KW (1,1) (0,2)
+DW (2,1) (0,1)
+BW (1,2) (1,1)
+RW (3,3) (1,3)
+TB (3,2) (3,3)
+DB (3,1) (4,2)
+BW (1,1) (2,1)
+DW (0,1) (1,2)
+RB (0,0) (0,1)
+TW (2,0) (0,0)
+LB (4,0) (2,0)
+LW (4,1) (3,0)
+DB (4,2) (4,0)
+BW (2,1) (3,1)
 
 mein output:
 
@@ -605,83 +573,21 @@ BW
 3 1
 BlockArray: array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((3,1),[(3,1)])),(8,((3,2),[(3,2)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
 reduced Block List: [[[(0,1),(0,2),(1,1),(1,2)]],[[(2,1)],[(2,2)],[(3,1)],[(3,2)],[(4,0)],[(4,3)]],[[(0,0),(1,0)],[(0,3),(1,3)],[(2,0),(3,0)],[(2,3),(3,3)]]]
+now solution is 28,
+problems before: intermittant steps of other block (DB) disurbing move of block DW
 36
 DW (3,2) (4,2) --
 DB (2,2) (3,2)  |--     combine
 DW (4,2) (4,1) -- |     combine
 DB (3,2) (4,2) ----
 TB (2,3) (2,2)
-RW (0,3) (2,3)
-BW (0,1) (0,2)
-KB (2,1) (0,1)
-KW (3,1) (1,1)
-DW (4,1) (3,1) --
-DB (4,2) (4,1)  |--     combine
-DW (3,1) (2,1) -- |     combine
-DB (4,1) (3,1) ---- 9
-LW (4,3) (4,2) --
-RW (2,3) (3,3)  |       combine
-LW (4,2) (4,1) -- 11
-TB (2,2) (3,2)
-BW (0,2) (1,2)
-KB (0,1) (0,3)
-KW (1,1) (0,2)
-DW (2,1) (0,1)
-BW (1,2) (1,1) 17
-RW (3,3) (1,3)
+...
+other problem: corner move done by different blocks (2 moves) should be reduced to no movement of one blk (LW),
+while other block (TB) is doing 2 step move (solved in function addPositionM)
 TB (3,2) (3,3)
 LW (4,1) (4,2)   ---  reduce to DB (3,1) (4,2)   (stay with LW)
 DB (3,1) (4,1) 20---
-BW (1,1) (2,1)
-DW (0,1) (1,2)
-RB (0,0) (0,1)
-TW (2,0) (0,0)
-LB (4,0) (3,0) --
-DB (4,1) (4,0)  |--     combine
-LB (3,0) (2,0) -- |     combine
-DB (4,0) (3,0) ----
-LW (4,2) (4,0)
-BW (2,1) (3,1) 28
-
-36
-DW 4 (3,2) (4,2) | 
-KW 3 (3,1) (3,2) reduce to KW 3 (3,1) (4,2)   stay with DW
-KB 1 (2,1) (4,1)
-TW D (2,0) (2,1)
-RB A (0,0) (2,0)
-BW B (0,1) (0,0)
-DB 2 (2,2) (0,2)
-KW 3 (3,2) (1,2)
-DW 4 (4,2) (3,2)
-KB 1 (4,1) (4,2) |
-DW 4 (3,2) (2,2) |
-KB 1 (4,2) (3,2)
-LB F (4,0) (4,1)
-RB A (2,0) (3,0) |
-LB F (4,1) (4,2)
-TW D (2,1) (3,1)
-BW B (0,0) (1,0)
-DB 2 (0,2) (0,0)
-KW 3 (1,2) (0,1)
-DW 4 (2,2) (0,2)
-BW B (1,0) (1,1)
-RB A (3,0) (1,0)
-TW D (3,1) (3,0)
-LB F (4,2) (4,1) |
-KB 1 (3,2) (4,2) reduce to KB 1 (3,2) (4,1)   stay with LB
-BW B (1,1) (2,1)
-DW 4 (0,2) (1,1)
-RW C (0,3) (0,2)
-TB E (2,3) (0,3)
-LW G (4,3) (3,3)--
-KB 1 (4,2) (4,3) |--
-LB F (4,1) (4,2)   |---
-LW G (3,3) (2,3)--    |
-KB 1 (4,3) (3,3)----
-LB F (4,2) (4,3)-------
-BW B (2,1) (3,1)
-
-BlockArray: array (0,9) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1),(2,2)])),(5,((2,3),[(2,3),(3,3)])),(6,((3,1),[(3,1)])),(7,((3,2),[(3,2)])),(8,((4,0),[(4,0)])),(9,((4,3),[(4,3)]))]
+...
 -}
 {-
 [".A..","AB.C","...C"] Target: "C" (0,0) (0,0): '.' Blocks: "ABC"
