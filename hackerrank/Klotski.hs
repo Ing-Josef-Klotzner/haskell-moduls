@@ -198,13 +198,11 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
     (visited', q) = case old_p_parent of
 --        Nothing -> (M.insert (reduce p) (p, parent) visited, Just p)
         Nothing -> if blkBi <= snd (A.bounds p)
-            then if sameBlock p parent grandPa
-                then (M.insert (reduce p) (p, parent) visited, Just p)
-                else if isOneBlk blkAi blkBi && sameBlock pSw parentSw grandPa
-                    then if movedCntBlk parent grandPa < 2 && opti && isParentSw
-                            then (M.insert (reduce pSw) (pSw, grandPa) visited, Just pSw)
-                            else (M.insert (reduce p) (p, parent) visited, Just p)
-                    else (M.insert (reduce p) (p, parent) visited, Just p)
+            then if isOneBlk blkAi blkBi && sameBlock pSw parentSw grandPa
+                then if movedCntBlk parent grandPa < 2 && opti && isParentSw
+                        then (M.insert (reduce pSw) (pSw, grandPa) visited, Just pSw)
+                        else (M.insert (reduce p) (p, parent) visited, Just p)
+                else (M.insert (reduce p) (p, parent) visited, Just p)
             else (M.insert (reduce p) (p, parent) visited, Just p)
 
         Just _ -> (visited, Nothing)
