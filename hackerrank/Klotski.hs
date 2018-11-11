@@ -193,7 +193,7 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
         Nothing -> if blkBi <= snd (A.bounds p)
             then if sameBlock p parent grandPa && grandPa /= root_
                 then (M.insert (reduce p) (p, grandPa) visited, Just p)
-                else if sameBlock pSw parentSw grandPa  --isOneBlk blkAi blkBi &&
+                else if isOneBlk blkAi blkBi && sameBlock pSw parentSw grandPa
                     then if movedCntBlk parentSw grandPa < 2 && isParentSw  && opti
                             then (M.insert (reduce pSw) (pSw, grandPa) visited, Just pSw)
                             else (M.insert (reduce p) (p, parent) visited, Just p)
@@ -203,7 +203,7 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
         Just _ -> (visited, Nothing)
         -- is faster with testcase 15 than solution in Nothing part
 --        Just (oldP, oldParent) -> if oBlkBi <= snd (A.bounds p) && oldGrandPa /= root_
---            then if sameBlock opSw oparentSw oldGrandPa && oldP /= p  --isOneBlk oBlkAi oBlkBi && 
+--            then if isOneBlk oBlkAi oBlkBi && sameBlock opSw oparentSw oldGrandPa && oldP /= p 
 --                    then if movedCntBlk oparentSw oldGrandPa < 2 && isoParentSw && oopti
 --                            then (M.insert (reduce opSw) (opSw, oldGrandPa) visited, Just opSw)
 --                            else (visited, Nothing)
@@ -417,6 +417,7 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
                 nextBlk = if restBML /= [] then extractNext restBML else "n" where
                     extractNext ((next, _, _) : _) = next
                 red2to1 = undefined
+
 {- example pattern:  t3Blk reduction
 DW (3,2) (4,2)      DW (3,2) (4,2)
 DB (2,2) (3,2) - -> DW (4,2) (4,1)  -->  Dw (3,2) (4,1)
