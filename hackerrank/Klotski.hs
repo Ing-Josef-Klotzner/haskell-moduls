@@ -14,6 +14,12 @@ type OneBlkA = A.Array Int Bool
 -- Vector addition.
 add (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
 sub (x1, y1) (x2, y2) = (x2 - x1, y2 - y1)
+getDir (x, y) (x1, y1) = (dir (x - x1),dir (y - y1))
+    where
+    dir x_
+        | x_ < 0 = (-1)
+        | x_ > 0 = 1
+        | x_ == 0 = 0
 
 unique :: (Ord a) => [a] -> [a]
 unique xs = go Set.empty xs where
@@ -180,21 +186,25 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
     old_p_parent = M.lookup (reduce p) visited
     (visited', q) = case old_p_parent of
 --        Nothing -> (M.insert (reduce p) (p, parent) visited, Just p)
+--        Nothing -> if sameBlock p parent grandPa && grandPa /= root_ -- && opti
+--                    then (M.insert (reduce p) (p, grandPa) visited, Just p)
+--                    else (M.insert (reduce p) (p, parent) visited, Just p)
+
         Nothing -> if blkBi <= snd (A.bounds p)
-            then if isOneBlk blkAi blkBi && sameBlock pSw parentSw grandPa
-                then if movedCntBlk parent grandPa < 2 && opti && isParentSw
-                        then (M.insert (reduce pSw) (pSw, grandPa) visited, Just pSw)
-                        else (M.insert (reduce p) (p, parent) visited, Just p)
-                else (M.insert (reduce p) (p, parent) visited, Just p)
+            then if sameBlock p parent grandPa && grandPa /= root_
+                then (M.insert (reduce p) (p, grandPa) visited, Just p)
+                else if sameBlock pSw parentSw grandPa  --isOneBlk blkAi blkBi &&
+                    then if movedCntBlk parentSw grandPa < 2 && isParentSw  && opti
+                            then (M.insert (reduce pSw) (pSw, grandPa) visited, Just pSw)
+                            else (M.insert (reduce p) (p, parent) visited, Just p)
+                    else (M.insert (reduce p) (p, parent) visited, Just p)
             else (M.insert (reduce p) (p, parent) visited, Just p)
 
         Just _ -> (visited, Nothing)
-        -- also correct working, but 15 % slower than solution in Nothing part
---        Just (oldP, oldParent) -> if oBlkBi <= snd (A.bounds p)
---            then if sameBlock oldP oldParent oldGrandPa
---                then (visited, Nothing)
---                else if isOneBlk oBlkAi oBlkBi && sameBlock opSw oparentSw oldGrandPa && oldGrandPa /= p
---                    then if movedCntBlk oldParent oldGrandPa < 2 && oopti && isoParentSw
+        -- is faster with testcase 15 than solution in Nothing part
+--        Just (oldP, oldParent) -> if oBlkBi <= snd (A.bounds p) && oldGrandPa /= root_
+--            then if sameBlock opSw oparentSw oldGrandPa && oldP /= p  --isOneBlk oBlkAi oBlkBi && 
+--                    then if movedCntBlk oparentSw oldGrandPa < 2 && isoParentSw && oopti
 --                            then (M.insert (reduce opSw) (opSw, oldGrandPa) visited, Just opSw)
 --                            else (visited, Nothing)
 --                    else (visited, Nothing)
@@ -221,19 +231,26 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
 --                        (any (==True) $ map comparison_ dirABlist)
 --                    | otherwise = False
 --                    where
---                    comparison_ (a, b) = add a opApos == ogPaApos && add b opBpos == ogPaBpos
+--                    comparison_ (a, b) = getDir opApos ogPaApos == a && getDir opBpos ogPaBpos == b
 --                readParentSw = M.lookup (reduce oparentSw) visited
 --                (isoParentSw, rgPsw) = case readParentSw of
 --                    Nothing -> (False, p)
 --                    Just (_, rogPsw) -> (True, rogPsw)
-    opti
-        | lenILp > 1 =   --readParent == parent && 
-            (any (==True) $ map comparison dirABlist)
+    opti = opti1 || opti2
+    opti2
+        | lenILp > 1 = (any (==True) $ map comparison dirABlist)
         | otherwise = False
         where
-        comparison (a, b) = add a pApos == gPaApos && add b pBpos == gPaBpos
+        comparison (a, b) = getDir pApos gPaApos == a && getDir pBpos gPaBpos == b
+--        comparison (a, b) = add a pApos == gPaApos && add b pBpos == gPaBpos
     dirABlist = [((0,-1), (-1,0)), ((1, 0), (0,-1)), ((0,1), (-1, 0)), ((-1,0), (0,-1)),
                 ((0, -1), (1, 0)), ((1, 0), (0, 1)), ((0,1), (1, 0)), ((-1,0), (0,1))]
+    opti1
+        | lenILp > 1 = (any (==True) $ map comparison dirAlist)
+        | otherwise = False
+        where
+        comparison a = getDir pApos gPaApos == a
+    dirAlist = [(2, 0), (-2, 0), (0, 2), (0, 0),(0, -2)]
     isOneBlk blkAi_ blkBi_ = oneBlkA A.! blkAi_ && oneBlkA A.! blkBi_
     sameBlock px par gPar = movedBlk px par == movedBlk par gPar
     lenILp = length (A.indices p)
@@ -256,7 +273,7 @@ addPositionM oneBlkA visited (p, parent) = (visited', q)
     (_, grandPa) = visited M.! (reduce parent) -- parent always existing
     blks = A.indices p
     blkAi = movedBlk p parent; blkBi = movedBlk parent grandPa
-----    root_ = A.array (A.bounds p) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices p]
+    root_ = A.array (A.bounds p) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices p]
     movedBlk p1 p2 = sum $ map map_f blks
         where
         map_f blk = if fil blk then blk else 0
@@ -312,6 +329,7 @@ newPositions rlc visited curr_pzs = addPositions visited (allMoves rlc curr_pzs)
 newPositionsM oneBlkA rlc visited curr_pzs = addPositionsM oneBlkA visited (allMoves rlc curr_pzs)
 
 newPositionsT rlc visited curr_pzs = addPositions visited (allMovesT rlc curr_pzs)
+newPositionsTM oneBlkA rlc visited curr_pzs = addPositionsM oneBlkA visited (allMovesT rlc curr_pzs)
 
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
@@ -332,7 +350,8 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
                 | otherwise = goT visitedT pzs''
                 where
                 cvt_bMLT x = cvtToOut (blkMovesL vstd x)
-                (visitedT, pzs'') = newPositionsT rlc vstd pzsT
+--                (visitedT, pzs'') = newPositionsT rlc vstd pzsT
+                (visitedT, pzs'') = newPositionsTM oneBlkA rlc vstd pzsT
 --        (visited', pzs') = newPositions rlc visited pzs         -- for single steps
         (visited', pzs') = newPositionsM oneBlkA rlc visited pzs  -- for multiple steps move
         winPz pzss = filter (isWin goal) pzss
@@ -369,28 +388,30 @@ findPuzzles oneBlkA rlc goal blkL start = go (M.singleton (reduce start) (start,
                     | otherwise = []
                 restOf5BML = drop 5 blkML
                 restOf3BML = drop 3 blkML
-                chkt5Blk = n51 == n4 && n52 == n5 && n1 /= n2 && n1 /= n3 && blks5NotOverlap
+                chkt5Blk = n51 == n4 && n52 == n5 && n1 /= n2 && n2 /= n3 && 
+                            blks5NotOverlap -- && t52 == f51 && t53 == f52 && t51 == f4 && f5 == t52
+                                                
                 -- and all blkPL of n4 "to" not in n2 "from" and "to" blkPL and
                                           --not in n3 "from" and "to" blkPL and
                     -- all blkPL of n5 "to" not in n3 "from" and "to" blkPL
                 blks5NotOverlap = allBlkPL_NotIn (nXYblkPL n4 t4) (nXYblkPL n52 f52) && 
-                                allBlkPL_NotIn (nXYblkPL n4 t4) (nXYblkPL n52 t52) &&
+                                --allBlkPL_NotIn (nXYblkPL n4 t4) (nXYblkPL n52 t52) &&
                                 allBlkPL_NotIn (nXYblkPL n4 t4) (nXYblkPL n53 f53) &&
-                                allBlkPL_NotIn (nXYblkPL n4 t4) (nXYblkPL n53 t53) &&
-                                allBlkPL_NotIn (nXYblkPL n5 t5) (nXYblkPL n53 f53) &&
-                                allBlkPL_NotIn (nXYblkPL n5 t5) (nXYblkPL n53 t53)
-                chkt3Blk = n1 == n3 && n1 /= n2 && blks3NotOverlap
-                -- and all blkPL of n3 "to" not in n2 "from" and "to" blkPL
-                blks3NotOverlap = allBlkPL_NotIn (nXYblkPL n3 t3) (nXYblkPL n2 f2) && 
-                                allBlkPL_NotIn (nXYblkPL n3 t3) (nXYblkPL n2 t2)
+                                --allBlkPL_NotIn (nXYblkPL n4 t4) (nXYblkPL n53 t53) &&
+                                allBlkPL_NotIn (nXYblkPL n5 t5) (nXYblkPL n53 f53) -- &&
+                                --allBlkPL_NotIn (nXYblkPL n5 t5) (nXYblkPL n53 t53)
+                chkt3Blk = n1 == n3 && n1 /= n2 && blks3NotOverlap -- && f3 == t1 && t3 /= f2
+                -- and all blkPL of n3 "to" not in n2 "from"          --and "to" blkPL
+                blks3NotOverlap = allBlkPL_NotIn (nXYblkPL n3 t3) (nXYblkPL n2 f2) -- && 
+                                --allBlkPL_NotIn (nXYblkPL n3 t3) (nXYblkPL n2 t2)
                 nXYblkPL x y = map (add y) (nXblkPL x) 
                 nXblkPL x = map (sub pos) blkPL
                     where
                     (pos, blkPL) = blk'' (blkIdx x) 
                 chgd5Blk = b51 : b4 : b52 : b5 : [b53]
                 chgd3Blk = b1 : b3 : [b2]
-                (b51@(n51,_,_) : b52@(n52,f52,t52) : b53@(n53,f53,t53) : b4@(n4,_,t4) : [b5@(n5,_,t5)]) = t5Blk
-                (b1@(n1,_,_) : b2@(n2,f2,t2) : [b3@(n3,_,t3)]) = t3Blk
+                (b51@(n51,f51,t51) : b52@(n52,f52,t52) : b53@(n53,f53,t53) : b4@(n4,f4,t4) : [b5@(n5,f5,t5)]) = t5Blk
+                (b1@(n1,f1,t1) : b2@(n2,f2,t2) : [b3@(n3,f3,t3)]) = t3Blk
                 blkIdx blk_ = snd $ head $ filter (\(x,y) -> x == blk_) $ zip blkL [0..] 
                 blk'' blki = (head pzs) A.! blki
                 nextBlk = if restBML /= [] then extractNext restBML else "n" where
@@ -521,14 +542,66 @@ I . . J
 B
 3 1
 
+testcase 15:
+6 6
+D K K L S S
+. P T L S S
+. P T T R R
+. P G G G R
+. B Y Y M M
+. B Y M M M
+A
+5 5
+
+mein output: (noch zu viele)
+19
+P (1,1) (1,0)
+T (1,2) (1,1)
+L (0,3) (1,3)
+K (0,1) (0,2)
+D (0,0) (0,1)
+G (3,2) (3,1)
+B (4,1) (4,0)
+Y (4,2) (4,1)
+M (4,3) (4,2)
+R (2,4) (3,4)
+S (0,4) (1,4)
+K (0,2) (0,3)
+D (0,1) (1,2)
+K (0,3) (0,0)
+D (1,2) (0,5)
+L (1,3) (0,2)
+S (1,4) (0,3)
+R (3,4) (2,3)
+D (0,5) (5,5)
+
+17
+P H (1,1) (3,0)
+D A (0,0) (3,1)
+T E (1,2) (0,0)
+D A (3,1) (2,3)
+T E (0,0) (1,1)
+K B (0,1) (0,0)
+L C (0,3) (0,2)
+S D (0,4) (0,3)
+G G (3,2) (3,1)
+P H (3,0) (1,0)
+B I (4,1) (4,0)
+Y J (4,2) (4,1)
+M K (4,3) (4,2)
+R F (2,4) (3,4)
+D A (2,3) (0,5)
+R F (3,4) (2,3)
+D A (0,5) (5,5)
+
 (49 seconds with last:)
 5 4
-A B B C
-A B B C
-D 1 2 E
-D 3 4 E
-F . . G
-B
+RB BW BW RW
+RB BW BW RW
+TW KB DB TB
+TW KW DW TB
+LB .. .. LW
+BW
 3 1
 
 28
@@ -561,16 +634,6 @@ LW (4,1) (3,0)
 DB (4,2) (4,0)
 BW (2,1) (3,1)
 
-mein output:
-
-5 4
-RB BW BW RW
-RB BW BW RW
-TW KB DB TB
-TW KW DW TB
-LB .. .. LW
-BW
-3 1
 BlockArray: array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((3,1),[(3,1)])),(8,((3,2),[(3,2)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
 reduced Block List: [[[(0,1),(0,2),(1,1),(1,2)]],[[(2,1)],[(2,2)],[(3,1)],[(3,2)],[(4,0)],[(4,3)]],[[(0,0),(1,0)],[(0,3),(1,3)],[(2,0),(3,0)],[(2,3),(3,3)]]]
 now solution is 28,
