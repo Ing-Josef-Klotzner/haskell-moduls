@@ -184,8 +184,8 @@ newPositionsD parent blk rlc visited curr_pzs =
 findPuzzles rlc goal blkL start = 
         go (M.singleton (reduce start) (start, root)) [start] 0 where
     go visited pzs c -- = goM visited pzs [] (c + 1) -- = goST visited pzs []
-        | any (isWin goal) pzs = cvtToOut (blkStepsL visited (minimum $ winPz pzs))
---        | any (isWin goal) pzs = concatMap cvt_bML (winPz pzs)
+        | any (isWin goal) pzs = out visited pzs
+--        | any (isWin goal) pzs = outAll visited pzs
         | otherwise = goM visited pzs [] 0 -- goST visited pzs []
         where
         cvt_bML vmap x = cvtToOut (blkStepsL vmap x)
@@ -204,7 +204,6 @@ findPuzzles rlc goal blkL start =
             pz_parentL = map createPPar allPz1MA
             createPPar x = (x, parent x)
             parent x = snd $ visitedM M.! (reduce x)
---        goM visitedM (pz : pzsMR) allPz1MA c = goD visitedM geoBlkIL [pz] allPz1MA c
         goM visitedM (pz : pzsMR) allPz1MA c
             | start == testcase12 = goD visitedM [9,8,5,2,0,1,3,4,7,6] [pz] allPz1MA c
             | otherwise = goD visitedM geoBlkIL [pz] allPz1MA c
