@@ -203,3 +203,14 @@ main = do
 --    nextMoves (pzM pz) (pzN pz) (return (pzBox pz,[]))
     print (length moves)
     mapM_ printMove moves
+
+{-
+3 4
+. A . .
+A B . C
+. . . C
+B
+0 0
+*** Exception: solution found in round: 46
+items todoList: 297
+-}
