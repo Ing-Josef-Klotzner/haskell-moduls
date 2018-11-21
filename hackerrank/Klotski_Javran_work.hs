@@ -126,25 +126,21 @@ search puz todoList visited n = case Seq.viewl todoList of
             -- skipping visited states
         _ | digestBox b `S.member` visited -> search puz bs visited n
             -- a solution is found
-        _ | fst targetBlock == targetCoord puz -> error $ "solution found in round: " ++ show n ++ "\nitems todoList: " ++ show (length $ toList todoList) ++ "\n"-- (b,mvs)
---        _ | n == 1 -> error $ "round " ++ show n ++ "\n" ++ show  todoList 
+        _ | fst targetBlock == targetCoord puz -> error $ "solution found in round: " ++ show n ++ "\nitems todoList: " ++ show (length $ toList todoList) ++ "\n" --(b,mvs) --
+        _ | n == 2 -> error $ "round " ++ show n ++ "\n" ++ show mvs ++ "\n" ++ show (map (\(_,m) -> m) (toList todoList))
             -- expand the current queue, and search next one in the queue
         _ -> search puz (bs Seq.>< nextMoves (pzM puz) (pzN puz) (b,mvs)) newVisited (n+1)
-
- {-
-[(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((0,2),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("B",((1,1),(0,2)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((0,3),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("B",((1,1),(0,3)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((1,1),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("B",((1,1),(1,1)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((1,2),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("B",((1,1),(1,2)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((2,0),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("B",((1,1),(2,0)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((2,1),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("B",((1,1),(2,1)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((2,2),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("B",((1,1),(2,2)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((1,1),Shape (fromList [(0,0)]) 1)),("C",((0,2),Shape (fromList [(0,0),(1,0)]) 9))],[("C",((1,3),(0,2)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((1,1),Shape (fromList [(0,0)]) 1)),("C",((0,3),Shape (fromList [(0,0),(1,0)]) 9))],[("C",((1,3),(0,3)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((1,1),Shape (fromList [(0,0)]) 1)),("C",((1,2),Shape (fromList [(0,0),(1,0)]) 9))],[("C",((1,3),(1,2)))]),(fromList [("A",((0,0),Shape (fromList [(0,1),(1,0)]) 10)),("B",((1,1),Shape (fromList [(0,0)]) 1)),("C",((1,3),Shape (fromList [(0,0),(1,0)]) 9))],[("C",((1,3),(1,3)))])]
--}
 
 -- | given one state with its move history
 --   get all possibilities of its next state
 nextMoves :: Int -> Int -> (Box,[Move]) -> Seq.Seq (Box,[Move])
 nextMoves m n (b,mvs) = do
     -- select one block
-    blkName  <- Seq.fromList $ case uncons mvs of
-        Nothing -> M.keys b
+    blkName  <- Seq.fromList $ {-case uncons mvs of
+        Nothing -> -} M.keys b
         -- but if we have a previous move, exclude that move
         -- so we don't end up with cycles
-        Just ((mv,_),_) -> delete mv (M.keys b)
+--        Just ((mv,_),_) -> delete mv (M.keys b)
     let curBlock = find' blkName b
         -- remove the selected block from box
         remainingBox = M.delete blkName b
@@ -167,27 +163,60 @@ nextMoves m n (b,mvs) = do
                     validCoord = (&&) <$> inRange ((0,0),(m-1,n-1))
                                       <*> notOccupied
                 in case () of
-                        -- if the current block possition has been visited
+                        -- if the current block position has been visited
                     _ | nxtBlk `S.member` visited -> expand nxtBlks visited
                         -- if all coordinates are valid (see above)
                         -- then mark it as visited and expand the queue
                     _ | all validCoord nxtCoords
-                        -> expand (nxtBlks Seq.>< fmap (,snd nxtBlk) (nextCoords . fst $ nxtBlk))
-                           (S.insert nxtBlk visited)
+                        -> expand (nxtBlks Seq.>< fmap (,snd nxtBlk) (nextCoords . fst $ nxtBlk))  --Seq.filter (\ coord -> (fst nxtBlk) /= coord) $ 
+                            (S.insert nxtBlk visited)
                         -- not a valid block position, try next one
                     _ -> expand nxtBlks visited
     -- get all possible moves using this selected block
     fmap (\nxtBlk -> ( M.insert blkName nxtBlk remainingBox -- plug in this block
                     ,(blkName ,( fst curBlock               -- update move history
                                , fst nxtBlk) ):mvs))
-      . Seq.fromList
-      . toList
-      $ expand (return curBlock) S.empty
+        . Seq.fromList
+--        . toList                                          -- orig
+--        $ expand (return curBlock) S.empty                -- orig
+        $ filter (\(coord,shape) -> coord /= fst curBlock)  -- corr
+        $ toList $ expand (return curBlock) S.empty         -- corr
+{-
+originally:
+solution found in round: 16215
+items todoList: 21250
+real	0m57.564s
+user	0m48.952s
+sys	0m8.816s
+
+corrected:
+solution found in round: 16215
+items todoList: 4620
+real	0m46.809s
+user	0m46.820s
+sys	0m0.120s
+
+error was unnecessary "nomoves" (from / to same position) in todoList:
+[[("BB",((4,3),(4,1)))],[("BB",((4,3),(4,2)))],[("BB",((4,3),(4,3)))],
+                                                       -----------    
+[("BS",((0,1),(0,1)))],[("BW",((3,0),(3,0)))],[("DS",((3,2),(3,2)))],
+        -----------             ---------              ---------
+[("DS",((3,2),(4,1)))],[("DS",((3,2),(4,2)))],[("DW",((3,1),(3,1)))],
+                                                      -----------
+[("DW",((3,1),(4,1)))],[("DW",((3,1),(4,2)))],[("KS",((4,0),(4,0)))],
+                                                      -----------
+[("KS",((4,0),(4,1)))],[("KS",((4,0),(4,2)))],[("KW",((3,3),(3,3)))],
+                                                      ------------  
+[("LS",((2,3),(2,3)))],[("LW",((2,2),(2,2)))],[("RS",((0,3),(0,3)))],
+        -----------            -----------            -----------
+[("RW",((0,0),(0,0)))],[("TS",((2,1),(2,1)))],[("TW",((2,0),(2,0)))]]
+        -----------            ----------             ----------
+-}
 
 -- | all possible next coordinates
 nextCoords :: Coord -> Seq.Seq Coord
-nextCoords (x,y) = fmap ((+ x) *** (+ y))
-                 . Seq.fromList
+nextCoords (x,y) = Seq.fromList $ nextCoords'' (x,y)
+nextCoords'' (x,y) = fmap ((+ x) *** (+ y))
                  $ [(-1,0), (1,0), (0,-1), (0,1)]
 
 -- | pretty print a move history

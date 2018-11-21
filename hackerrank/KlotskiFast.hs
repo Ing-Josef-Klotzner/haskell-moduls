@@ -1,16 +1,43 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Main where
 import Data.List (elemIndices, minimum, (\\), notElem, all, sort, repeat, elemIndex, sortBy)
 import qualified Data.Set as Set   -- (insert, member, empty)
 import qualified Data.Map as M
+import Control.Applicative
+import Control.Monad hiding (mapM_)
+import Data.Foldable
+import Control.Arrow
+import Data.Bits
+import Data.Int
 import qualified Data.Array as A
 import qualified Data.Maybe as Maybe
 import qualified ArrayExtensions as AE
 
-type PArray = A.Array Int ((Int, Int), [(Int, Int)])
-type Coord = (Int, Int)
-type VMap = M.Map VMapKey (PArray, PArray)
-type VMapKey = [[[Coord]]]
+-- 2 coordinate variables y and x are brought to 1 Int8
+-- upper 4 bits is y, lower 4 bits is x 
+-- limits maximum coordinates to 16x16, while 6x6 would
+-- be sufficient based on hackerranks preconditions
+type Coord = Int8
+type BlkIdx = Int8
+type Coord' = (Int, Int)
+type Block = (Coord, Shape)
+type Box = A.Array BlkIdx Block
+type Move = (BlkIdx, (Coord, Coord))
 
+--   64 bits to store maximum 4x4 Block
+type Shape = Int16
+instance Num Shape => Num (a -> Shape) where
+      negate      = fmap negate
+      (+)         = liftA2 (+)
+      (*)         = liftA2 (*)
+      fromInteger = pure . fromInteger
+      abs         = fmap abs
+      signum      = fmap signum
+
+type PArray = A.Array Int ((Int, Int), [(Int, Int)])
+type VMap = M.Map VMapKey (PArray, PArray)
+type VMapKey = [[[Coord']]]
 -- Vector addition.
 add (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
 sub (x1, y1) (x2, y2) = (x2 - x1, y2 - y1)
@@ -44,7 +71,47 @@ getLn x = do
     cs <- getLn (x - 1)
     return ([cu] ++ cs)
 
-createBlockMap :: Ord a => [[a]] -> [[[a]]] -> M.Map [a] ((Int, Int), [(Int, Int)])
+nMax = 6  -- maximum size of puzzle
+xMax = 3  -- maximum size of block
+-- convert 2 coordinate variables to one Int8
+-- upper half byte y, lower half byte x
+coor2Int :: Coord' -> Coord
+--coor2Int (y, x) = fromIntegral $ x .|. (rotate y 4)
+coor2Int (y, x) = fromIntegral $ y * 16 + x
+-- it is equivalent y*16+x, but needs more base knowledge :)
+-- coor2Int (y, x) = fromIntegral $ ((0 .|. y) `rotate` 4 ) .|. x
+
+-- convert Int8 to 2 coordinate variables
+int2Coor :: Coord -> Coord'
+int2Coor int = (fromIntegral int) `divMod` 16
+
+int2y :: Coord -> Int
+int2y int = (fromIntegral int) `div` 16
+int2x int = (fromIntegral int) `mod` 16
+
+-- encode shapes into numbers
+coords2Shape :: (Foldable f) => f Coord' -> Shape
+coords2Shape = foldr (\(y,x) -> (`setBit` (xMax*y+x))) 0
+
+-- convert from a list of coordinates to a block
+coords2Block :: [Coord'] -> Block
+coords2Block xs = (coor2Int topLeft, (coords2Shape_ xs))
+    where
+    topLeft@(yt,xt) = (minimum . map fst &&& minimum . map snd) xs
+    coords2Shape_ = foldr (\(y,x) -> (`setBit` (xMax*(y - yt)+(x - xt)))) 0
+
+--shape2Coord x = foldr (\z y -> if testBit x z then (add topLeft (divMod z xMax) : y) else y) [] [0..(xMax^2-1)]
+
+-- convert from a block to a list of coordinates
+block2Coord's :: Block -> [Coord']
+block2Coord's (tLInt, shape) = shape2Coords shape
+    where
+    shape2Coords x = foldr (\z y -> if testBit x z 
+                                    then (add topLeft (divMod z xMax) : y)
+                                    else y) [] [0..(xMax^2-1)]
+    topLeft = int2Coor tLInt
+
+createBlockMap :: Ord a => [a] -> [[a]] -> M.Map a ((Int, Int), [(Int, Int)])
 createBlockMap blk pz = go blk 0 0 M.empty where
     lp = length pz
     wp = length (pz !! 0)
@@ -66,7 +133,7 @@ createBlockMap blk pz = go blk 0 0 M.empty where
         blPMap = M.insert b (blockPos, l) blMap
 
 -- element 0 of blockarray holds dimensions of puzzle ((0,0), [(0,0),(y,x)])
-createBlockArray :: Ord a => [[a]] -> [[[a]]] -> PArray --A.Array Int ((Int, Int), [(Int, Int)])
+createBlockArray :: Ord a => [a] -> [[a]] -> PArray --A.Array Int ((Int, Int), [(Int, Int)])
 createBlockArray blk pz =   let blM = createBlockMap blk pz
                                 getL x = blM M.! x 
                                 arrL = zip [0..] (map getL blk)
@@ -74,12 +141,12 @@ createBlockArray blk pz =   let blM = createBlockMap blk pz
 
 -- Is this a winning position? target has index 0
 --isWin :: (Eq a, Num i, A.Ix i) => a -> A.Array i (a, b) -> Bool
-isWin :: Coord -> PArray -> Bool
+isWin :: Coord' -> PArray -> Bool
 isWin goal pz = goal == (fst $ pz A.! 0)
 
 -- Try to move the blk in in puzzle in direction dir. Return Just the new
 -- puzzle, or Nothing if the move isn’t legal.
-moveBlk :: Coord -> PArray -> Int -> Coord -> Maybe PArray
+moveBlk :: Coord' -> PArray -> Int -> Coord' -> Maybe PArray
 moveBlk rlc pz blk dir
     | check = Just $ pz A.// [(blk, (blockPos, poses2))]
     | otherwise = Nothing where
@@ -101,7 +168,7 @@ moveBlk rlc pz blk dir
 
 -- Given a list of puzzles, return the list of different
 -- puzzles (with each parent in a tuple) that are reachable from them in exactly one move.
-allMoves :: Coord -> [PArray] -> [(PArray, PArray)]
+allMoves :: Coord' -> [PArray] -> [(PArray, PArray)]
 allMoves rlc pzs = uniqFstTup $ concatMap allMoves1 pzs where
     allMoves1 pz = zip (Maybe.catMaybes [moveBlk rlc pz blk dir |
                 blk <- A.indices pz,
@@ -115,7 +182,7 @@ allMovesD parent blk rlc pzs = concatMap allMoves1 pzs where -- uniqFstTup $
 -- not used - just for testing^
 -- Given a puzzle, return the list of different
 -- puzzles that are reachable from it (father) in exactly one move.
-allMoves1_ :: Coord -> PArray -> [PArray]
+allMoves1_ :: Coord' -> PArray -> [PArray]
 allMoves1_ rlc pz = Maybe.catMaybes [moveBlk rlc pz blk dir |
                 blk <- A.indices pz,
                 dir <- dirs]
@@ -149,7 +216,7 @@ reduce pz = go blsL M.empty where
     blMTo0 blL = (\(p,l) -> map (sub p) l) blL
     redBlSet = Set.fromList $ map blMTo0 blsL
     redBlL = Set.toList redBlSet
-    redBlM = M.fromList $ zip redBlL [0..]
+    redBlM = M.fromList $ zip redBlL [0::Int ..]
 
 -- Add puzzle p to the visited map with its parent.
 -- Return the updated map and Just p if p wasn’t previously visited,
@@ -175,13 +242,13 @@ addPositions visited ((p, parent):ps) = (visited'', qs)
 
 -- Given the map of visited puzzles and the list
 -- of current puzzles, return an updated map with all next moves
---newPositions :: Coord -> VMap -> [PArray] -> (VMap,[PArray])
+--newPositions :: Coord' -> VMap -> [PArray] -> (VMap,[PArray])
 newPositionsD parent blk rlc visited curr_pzs = 
     addPositions visited (allMovesD parent blk rlc curr_pzs)
 
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
---findPuzzles :: Coord -> Coord -> [[Char]] -> PArray -> [Char]
+--findPuzzles :: Coord' -> Coord' -> [[Char]] -> PArray -> [Char]
 findPuzzles rlc goal blkL start = 
         go (M.singleton (reduce start) (start, root)) [start] 0 where
     go visited pzs c -- = goM visited pzs [] (c + 1) -- = goST visited pzs []
@@ -205,9 +272,9 @@ findPuzzles rlc goal blkL start =
             pz_parentL = map createPPar allPz1MA
             createPPar x = (x, parent x)
             parent x = snd $ visitedM M.! (reduce x)
-        goM visitedM (pz : pzsMR) allPz1MA c
+        goM visitedM (pz : pzsMR) allPz1MA c {-
             | start == testcase12 = goD visitedM [9,8,5,2,0,1,3,4,7,6] [pz] allPz1MA c
-            | otherwise = goD visitedM geoBlkIL [pz] allPz1MA c
+            | otherwise-} = goD visitedM geoBlkIL [pz] allPz1MA c
         -- Depth first search with each block, target last
             where
             goD vstd [] _ allPz1M c -- = goM vstd pzsMR allPz1M c
@@ -215,7 +282,7 @@ findPuzzles rlc goal blkL start =
 --                | any (isWin goal) allPz1M = outAll vstd allPz1M
                 | otherwise = goM vstd pzsMR allPz1M c
             goD vstd blkL [] allPz1M c = goD vstd (tail blkL) [pz] allPz1M c
-            goD vstd blkL pzsD allPz1M c  = goD visitedD blkL pzs'' (allPz1M ++ pzs'') c
+            goD vstd blkL pzsD allPz1M c  = goD visitedD blkL pzs'' (pzs'' ++ allPz1M) c
                 where
                 blk = head blkL
                 isTarget = blk == 0
@@ -289,15 +356,15 @@ cntBlkL = zip [length $ ocF solBlkOrd | ocF <- map elemIndices blkIL] blkIL
 ordBlkL = map snd $ reverse $ sort cntBlkL
 --assumption: best to sort by size of block ascending and then 
 --sort them in shortest geometrical distance (sortBy position)
-v=4::Int;h=3::Int
-geoSort p = sortBy (\(_,((y1,x1),_)) (_,((y2,x2),_)) 
+v=5;h=5
+geoSort'' p = sortBy (\(_,((y1,x1),_)) (_,((y2,x2),_)) 
     -> compare ((v-y1)^2+(h-x1)^2) ((v-y2)^2+(h-x2)^2)) p
 lenSort x = sortBy (\(_,(_,list1)) (_,(_,list2)) 
     -> compare (length list1) (length list2)) x
-geoLenSort p = lenSort $ geoSort $ (A.assocs p)
-geoSortIdxL p = map (\(idx,(pos,posL)) -> idx) $ geoLenSort p
+geoSort p = lenSort $ geoSort'' (A.assocs p)
+geoSortIdxL p = map (\(idx,(pos,posL)) -> idx) $ geoSort p
 
-rotate x = (tail x) ++ [(head x)]
+-- rotate x = (tail x) ++ [(head x)]
 
 allBlkPL_NotIn :: Eq a => [a] -> [a] -> Bool
 allBlkPL_NotIn a b = all (== True) [all (/=x) b | x <- a]
@@ -372,110 +439,6 @@ G H H I
 B
 3 1
 (sollten 102 sein)  "B","A","C","D","E","F","G","H","I","J"
-103
-9 J (4,1) (4,0)
-8 I (3,3) (4,2) [9,8,5,2,0,4,7,6,3,1]
-5 F (2,3) (4,3)
-2 C (0,3) (2,3)
-0 B (0,1) (0,2)
-1 A (0,0) (0,1)
-3 D (2,0) (0,0)
-6 G (3,0) (1,0)
-7 H (3,1) (3,0)
-4 E (2,1) (2,0)
-2 C (2,3) (2,2)
-3 F (4,3) (2,3)
-8 I (4,2) (3,3)
-9 J (4,0) (4,2)
-7 H (3,0) (4,0)
-4 E (2,0) (3,0)
-6 G (1,0) (2,1)
-3 D (0,0) (2,0)
-1 A (0,1) (0,0)
-0 B (0,2) (0,1)
-5 F (2,3) (0,3)
-8 I (3,3) (1,3)
-2 C (2,2) (2,3)
-4 E (3,0) (3,1)
-3 D (2,0) (3,0)
-6 G (2,1) (2,0)
-4 E (3,1) (2,1)
-3 D (3,0) (3,2)
-7 H (4,0) (3,0)
-9 J (4,2) (4,0)
-3 D (3,2) (4,2)
-7 H (3,0) (3,1)
-2 C (2,3) (3,3)
-4 E (2,1) (2,2)
-G (2,0) (2,1)
-A (0,0) (2,0)
-B (0,1) (0,0)
-I (1,3) (0,2)
-E (2,2) (1,2)
-G (2,1) (2,2)
-C (3,3) (2,3)
-D (4,2) (4,3)
-J (4,0) (4,1)
-A (2,0) (3,0)
-B (0,0) (1,0)
-I (0,2) (0,0)
-F (0,3) (0,1)
-E (1,2) (0,2)
-G (2,2) (1,3)
-B (1,0) (1,1)
-I (0,0) (2,0)
-F (0,1) (1,0)
-E (0,2) (0,0)
-G (1,3) (0,2)
-C (2,3) (0,3)
-D (4,3) (2,3)
-J (4,1) (4,2)
-H (3,1) (3,2)
-A (3,0) (3,1)
-I (2,0) (4,0)
-F (1,0) (3,0)
-B (1,1) (1,0)
-G (0,2) (1,2)
-E (0,0) (0,1)
-D (2,3) (2,2)
-C (0,3) (1,3)
-E (0,1) (0,2)
-B (1,0) (0,0)
-F (3,0) (2,0)
-I (4,0) (3,0)
-A (3,1) (2,1)
-J (4,2) (4,0)
-H (3,2) (4,2)
-C (1,3) (2,3)
-G (1,2) (1,3)
-D (2,2) (1,2)
-A (2,1) (2,2)
-F (2,0) (3,1)
-B (0,0) (1,0)
-E (0,2) (0,0)
-G (1,3) (0,3)
-D (1,2) (0,2)
-C (2,3) (1,3)
-A (2,2) (1,2)
-H (4,2) (3,2)
-J (4,0) (4,2)
-I (3,0) (4,0)
-F (3,1) (4,1)
-B (1,0) (2,0)
-E (0,0) (1,0)
-D (0,2) (0,0)
-G (0,3) (0,1)
-C (1,3) (0,3)
-A (1,2) (0,2)
-H (3,2) (2,2)
-J (4,2) (3,2)
-F (4,1) (4,3)
-I (4,0) (4,2)
-B (2,0) (3,0)
-H (2,2) (2,0)
-J (3,2) (2,2)
-I (4,2) (3,3)
-B (3,0) (3,1)
 
 
 testcase 8:
@@ -496,7 +459,7 @@ E . . F
 B
 3 1
 
-my output: (after ordering DFS blocks processing)
+my output: (after ordering DFS blocks processing - 57s in interpreter)
 28
 12 BB (4,3) (4,1)
 10 KW (3,3) (4,2)
@@ -610,68 +573,9 @@ A
 5 5
 
 mein output: (noch zu viele)
-19
+19 (soll: 17)
 P (1,1) (1,0)
 solution: DFS for each block
-
-17
-P H (1,1) (3,0)
-D A (0,0) (3,1)
-T E (1,2) (0,0)
-D A (3,1) (2,3)
-T E (0,0) (1,1)
-K B (0,1) (0,0)
-L C (0,3) (0,2)
-S D (0,4) (0,3)
-G G (3,2) (3,1)
-P H (3,0) (1,0)
-B I (4,1) (4,0)
-Y J (4,2) (4,1)
-M K (4,3) (4,2)
-R F (2,4) (3,4)
-D A (2,3) (0,5)
-R F (3,4) (2,3)
-D A (0,5) (5,5)
-
-(49 seconds with last:)
-5 4
-RB BW BW RW
-RB BW BW RW
-TW KB DB TB
-TW KW DW TB
-LB .. .. LW
-BW
-3 1
-
-28
-DW (3,2) (4,1)
-DB (2,2) (4,2)
-TB (2,3) (2,2)
-RW (0,3) (2,3)
-BW (0,1) (0,2)
-KB (2,1) (0,1)
-KW (3,1) (1,1)
-DW (4,1) (2,1)
-DB (4,2) (3,1)
-LW (4,3) (4,1)
-RW (2,3) (3,3)
-TB (2,2) (3,2)
-BW (0,2) (1,2)
-KB (0,1) (0,3)
-KW (1,1) (0,2)
-DW (2,1) (0,1)
-BW (1,2) (1,1)
-RW (3,3) (1,3)
-TB (3,2) (3,3)
-DB (3,1) (4,2)
-BW (1,1) (2,1)
-DW (0,1) (1,2)
-RB (0,0) (0,1)
-TW (2,0) (0,0)
-LB (4,0) (2,0)
-LW (4,1) (3,0)
-DB (4,2) (4,0)
-BW (2,1) (3,1)
 
 BlockArray: array (0,10) [(0,((0,1),[(0,1),(0,2),(1,1),(1,2)])),(1,((0,0),[(0,0),(1,0)])),(2,((0,3),[(0,3),(1,3)])),(3,((2,0),[(2,0),(3,0)])),(4,((2,1),[(2,1)])),(5,((2,2),[(2,2)])),(6,((2,3),[(2,3),(3,3)])),(7,((3,1),[(3,1)])),(8,((3,2),[(3,2)])),(9,((4,0),[(4,0)])),(10,((4,3),[(4,3)]))]
 reduced Block List: [[[(0,1),(0,2),(1,1),(1,2)]],[[(2,1)],[(2,2)],[(3,1)],[(3,2)],[(4,0)],[(4,3)]],[[(0,0),(1,0)],[(0,3),(1,3)],[(2,0),(3,0)],[(2,3),(3,3)]]]
