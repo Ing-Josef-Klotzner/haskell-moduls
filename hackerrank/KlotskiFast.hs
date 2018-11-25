@@ -6,14 +6,14 @@ import qualified Data.Set as Set   -- (insert, member, empty)
 import qualified Data.Map as M
 import Control.Applicative
 import Control.Monad hiding (mapM_)
-import Data.Foldable
+import Data.Foldable (Foldable, foldr,concatMap,concat)
 import Control.Arrow
 import Data.Bits
 import Data.Int
 import qualified Data.Array as A
 import qualified Data.Maybe as Maybe
 import qualified ArrayExtensions as AE
-
+import Prelude hiding ( minimum, concat, notElem, concatMap, all, mapM_, foldr)
 -- 2 coordinate variables y and x are brought to 1 Int8
 -- upper 4 bits is y, lower 4 bits is x 
 -- limits maximum coordinates to 16x16, while 6x6 would
@@ -32,6 +32,7 @@ type Block = (Coord, Shape)
 type BoxKey = Int
 -- bits 0-7 Blockindex, bits 8-11 to x, bits 12-15 to y,
 --                      bits 16-19 from x, bits 20-23 from y
+-- not used, because would mean the need of handling whole move history in all variants
 type Move = Int32 --(BlkIdx, (Coord, Coord))
 --   16 bits to store maximum 4x4 Block
 type Shape = Int
@@ -100,16 +101,38 @@ shape2Coord n shape = shape `divMod` n
 -- convert from a list of coordinates to a block
 -- BlockR: relative Shape - bit 20-23 y, bit 16-19 x, bit 0-15 Shape
 coords2Block_ :: Int -> [Coord'] -> BlockR
---coords2Block_ n xs = (shiftL (coor2Int $ shape2Coord n topLeftS) 16) .|. (shiftR shape topLeftS)
 coords2Block_ n xs = inty .|. intx .|. (shiftR shape topLeftS)
     where
     topLeftS = go shape 0
     inty = shiftL (topLeftS `div` n) 20
     intx = shiftL (topLeftS `mod` n) 16
+    go :: Int -> Int -> Int
     go shap x
-        | shap .&. tREP == 0 = go (shiftR shap n) (x + n)
-        | shap .&. tREP /= 0 && shap .&. lREP /= 0 = x
+        | isNotAtTop = go (shiftR shap n) (x + n)
+        | isInTopEdge = x
         | otherwise = go (shiftR shap 1) (x + 1)
+        where
+        isNotAtTop = shap .&. tREP == 0
+        isInTopEdge = shap .&. lREP /= 0
+    --topRowEdgePattern
+    tREP = 2^n - 1
+    --leftRowEdgePattern
+    lREP = 0x11111111
+    shape = coords2Shape_ xs
+    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) (0::Int)
+
+coords2Block' :: Int -> [Coord'] -> BlockR
+coords2Block' n xs = inty .|. intx .|. (shiftR shape topLeftS)
+    where
+    topLeftS = tLS shape
+    inty = shiftL (topLeftS `div` n) 20
+    intx = shiftL (topLeftS `mod` n) 16
+    tLS shap = vertical + horizontal
+        where
+        vertical = fst $ last $ takeWhile isNotAtT ((0,0) : [((x + n), shap `shiftR` x) | x <- [0,n..]])
+        horizontal = fst $ last $ takeWhile isInTopEd ((0,0) : [((x + 1), shap `shiftR` (x + vertical)) | x <- [0..]])
+    isNotAtT (_,s) = s .&. tREP == 0
+    isInTopEd (_,s) = s .&. lREP == 0
     --topRowEdgePattern
     tREP = 2^n - 1
     --leftRowEdgePattern
@@ -125,6 +148,7 @@ coords2Block n xs = (shift (coor2Int topLeft) 16) .|. (coords2Shape_ xs)
 
 go x = foldr (\x -> (+ coords2Block 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
 go_ x = foldr (\x -> (+ coords2Block_ 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+go' x = foldr (\x -> (+ coords2Block' 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
 -- convert from a block to a list of coordinates
 block2Coord's :: Int -> BlockR -> [Coord']
 block2Coord's n blkR = shape2Coords
