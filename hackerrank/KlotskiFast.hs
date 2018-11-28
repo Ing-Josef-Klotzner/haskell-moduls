@@ -23,13 +23,13 @@ type BlkIdx = Int
 type Coord' = (Int, Int)
 -- change from relative to abs shape coordinates by shifting fCoor bits
 -- fCoor = y * n + x
+type BlockA = Int  -- absolute shape
 type BlockR = Int      -- relative Shape - bit 20-23 y, bit 16-19 x, bit 0-15 Shape
 type Block = (Coord, Shape)
--- absolute bit "array" (6x6=36) 
--- bits 0-35 with all blocks
--- bits 36-41 holding last moved block index
--- bits 42-45 target x, bits 46-49 target y
-type BoxKey = Int
+-- 0-3 x blk0, 4-7 y blk0 ... length blk - 1
+-- at length blk * 8: last moved block index
+-- at (length blk + 1) * 8: target y, target x
+type BoxKey = Integer
 -- bits 0-7 Blockindex, bits 8-11 to x, bits 12-15 to y,
 --                      bits 16-19 from x, bits 20-23 from y
 -- not used, because would mean the need of handling whole move history in all variants
@@ -37,16 +37,61 @@ type Move = Int32 --(BlkIdx, (Coord, Coord))
 --   16 bits to store maximum 4x4 Block
 type Shape = Int
 -- index 0 target block
--- last index is last moved blockindex
-type Box = A.Array Int BlockR
+-- last index is last moved blockindex; Arrangement bits:
+-- 0-7 last block index in BlockArray, 8-11 x block 0, 12-15 y block 0, ...
+type Box = Integer  -- just block positions, except index of last moved block
+type BSArray = A.Array Int Shape   -- block shape array
 type PArray = A.Array Int (Coord', [Coord'])
 type BMap = M.Map BoxKey (Box, Box)
 type VMap = M.Map VMapKey ((Int,PArray), (Int,PArray))
-type VMapKey = [[Coord']]
+type VMapKey = [Coord']
+
+-- put block position to box
+putBlP :: Box -> Coord' -> BlkIdx -> Box
+putBlP box pos idx = box .&. mask .|. (toInteger $ coor2Int pos) `shiftL` offset
+    where
+    mask = complement $ 0xFF `shiftL` offset -- for erase old
+    offset = idx * 8
+
+-- get block position from box
+getBlkP :: Box -> Int -> Coord'
+getBlkP box idx = int2Coor $ fromInteger $ box `shiftR` offset .&. mask
+    where
+    mask = 0xFF
+    offset = idx * 8
+
+-- put block position to box
+putBlIP :: Box -> Coord -> BlkIdx -> Box
+putBlIP box pos idx = box .&. mask .|. (toInteger pos) `shiftL` offset
+    where
+    mask = complement $ 0xFF `shiftL` offset -- for erase old
+    offset = idx * 8
+
+-- get block position from box
+getBlkIP :: Box -> Int -> Coord
+getBlkIP box idx = fromInteger $ box `shiftR` offset .&. mask
+    where
+    mask = 0xFF
+    offset = idx * 8
+
+-- get coordinates of BlockR
+getBlkCo :: BlockR -> Coord'
+getBlkCo block = int2Coor $ block `shiftR` offset .&. mask
+    where
+    mask = 0xFF
+    offset = 16
+
+-- get shape of BlockR
+getBlkS :: BlockR -> Shape
+getBlkS block = block .&. mask
+    where
+    mask = 0xFFFF
+
 -- Vector addition.
 add (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
 sub (x1, y1) (x2, y2) = (x2 - x1, y2 - y1)
-getDir (x, y) (x1, y1) = (dir (x - x1),dir (y - y1))
+-- getDir from to
+getDir (x, y) (x1, y1) = (dir (x1 - x),dir (y1 - y))
     where
     dir x_
         | x_ < 0 = (-1)
@@ -129,10 +174,10 @@ coords2Block' n xs = inty .|. intx .|. (shiftR shape topLeftS)
     intx = shiftL (topLeftS `mod` n) 16
     tLS shap = vertical + horizontal
         where
-        vertical = fst $ last $ takeWhile isNotAtT ((0,0) : [((x + n), shap `shiftR` x) | x <- [0,n..]])
-        horizontal = fst $ last $ takeWhile isInTopEd ((0,0) : [((x + 1), shap `shiftR` (x + vertical)) | x <- [0..]])
-    isNotAtT (_,s) = s .&. tREP == 0
-    isInTopEd (_,s) = s .&. lREP == 0
+        vertical = head $ filter isAtTop [0,n..]
+        horizontal = head $ filter isInTopEd [0..]
+        isAtTop s = (shap `shiftR` s) .&. tREP /= 0
+        isInTopEd s = (shap `shiftR` (s + vertical)) .&. lREP /= 0
     --topRowEdgePattern
     tREP = 2^n - 1
     --leftRowEdgePattern
@@ -150,6 +195,7 @@ go x = foldr (\x -> (+ coords2Block 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2)
 go_ x = foldr (\x -> (+ coords2Block_ 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
 go' x = foldr (\x -> (+ coords2Block' 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
 -- convert from a block to a list of coordinates
+-- n is horizontal box dimension (from m x n)
 block2Coord's :: Int -> BlockR -> [Coord']
 block2Coord's n blkR = shape2Coords
     where
@@ -159,7 +205,14 @@ block2Coord's n blkR = shape2Coords
                                     then (add topLeft (divMod z n) : y)
                                     else y) [] [0..(n^2-1)]
 
-dec2bin x = putStrLn $ concatMap show $ reverse $ decToBin' x
+-- change from relative (Coor,Shape) to absolute block (shape)
+toAbsB :: Int -> BlockR -> BlockA
+toAbsB n blkR = shape `shiftL` (y * n + x)
+    where
+    (y,x) = getBlkCo blkR
+    shape = getBlkS blkR
+
+dec2bin x = concatMap show $ reverse $ decToBin' x
   where
     decToBin' 0 = [0]
     decToBin' y = let (a,b) = quotRem y 2 
@@ -207,19 +260,31 @@ createBlockMap blk pz = go blk 0 0 M.empty where
         blPMap = M.insert b (blockPos, l) blMap
 
 -- element 0 of blockarray holds target block
--- last element of blockarray holds last moved blockindex (default 1)
-createBlockArray_ :: Ord a => Int -> [a] -> [[a]] -> Box --A.Array Int ((Int, Int), [(Int, Int)])
-createBlockArray_ n blk pz =    let blM = createBlockMap_ n blk pz
-                                    getL x = blM M.! x 
-                                    arrL = zip [0..] (map getL blk ++ [1])
-                                in A.array (0,length blk) arrL
+-- last element of blockarray holds last moved blockindex (default 0)
+-- just positions while BlockShapeArray holds shapes
+createBlockArrays :: Ord a => Int -> [a] -> [[a]] -> (Box, BSArray)
+createBlockArrays n blk pz =    
+    let blM = createBlockMap_ n blk pz
+        getBlR x = blM M.! x 
+        arrL = zip [0..] (map (getBlkS . getBlR) blk ++ [0])
+        blockShapeArr = A.array (0,len) arrL
+        blockPosArr = box_ 0 0 where
+            box_ bx nr
+                | nr == len = bx
+                | otherwise = box_ (putBlP bx pos nr) (nr+1)
+                where
+                pos = getBlkCo $ getBlR (blk !! nr)
+        len = length blk
+--        blockCoordsL = map (coor2Int $ getBlkCo) blk
+    in (blockPosArr, blockShapeArr)
 
 -- element 0 of blockarray holds target block
-createBlockArray :: Ord a => [a] -> [[a]] -> PArray --A.Array Int ((Int, Int), [(Int, Int)])
-createBlockArray blk pz =   let blM = createBlockMap blk pz
-                                getL x = blM M.! x 
-                                arrL = zip [0..] (map getL blk)
-                            in A.array (0,length blk - 1) arrL
+createBlockArray :: Ord a => [a] -> [[a]] -> PArray
+createBlockArray blk pz =
+    let blM = createBlockMap blk pz
+        getL x = blM M.! x 
+        arrL = zip [0..] (map getL blk)
+    in A.array (0,length blk - 1) arrL
 
 -- Is this a winning position? target has index 0
 --isWin :: (Eq a, Num i, A.Ix i) => a -> A.Array i (a, b) -> Bool
@@ -283,42 +348,51 @@ allMoves1_ rlc pz = [moveBlk rlc pz blk dirs |
 -- do not reduce target! target has index 0
 --reduce :: BlkIdx -> Box -> BoxKey
 
--- bits 0-35 with all blocks
--- bits 36-41 holding last moved block index
--- bits 42-45 target x, bits 46-49 target y
-reduce_ blk pz = go blsL M.empty where
-    go [] blM            = ((blk,0) : [targetPos]) : M.elems blM
-    go (x@(pos, eL):xs) blM = go xs blSM
-        where
-        i = redBlM M.! blM1To0
-        blM1To0 = map (sub pos) eL
-        mby = M.lookup i blM
-        blSM = case mby of
-            Just old -> M.insert i (sort (old ++ [pos])) blM
-            Nothing -> M.insert i ([pos]) blM
-    blsAL = A.elems pz
-    blsL = tail blsAL -- process without target
-    (targetPos, targetBlL) = (blsAL !! 0)
-    blMTo0 blL = (\(p,l) -> map (sub p) l) blL
-    redBlL = map blMTo0 blsL
-    redBlM = M.fromList $ zip redBlL [0::Int ..]
+-- 0-3 x blk1, 4-7 y blk1,... maxBd - 1
+-- at maxBd * 8: last moved block index -- leave it in box
+-- at (maxBd + 1) * 8: target y, target x
 
-reduce blk pz = go blsL M.empty where
-    go [] blM            = ((blk,0) : [targetPos]) : M.elems blM
-    go (x@(pos, eL):xs) blM = go xs blSM
-        where
-        i = redBlM M.! blM1To0
-        blM1To0 = map (sub pos) eL
-        mby = M.lookup i blM
-        blSM = case mby of
-            Just old -> M.insert i (sort (old ++ [pos])) blM
-            Nothing -> M.insert i ([pos]) blM
-    blsAL = A.elems pz
+reduce_ :: BSArray -> Box -> BoxKey
+reduce_ blSAr box = reducedInt    -- go blsL M.empty
+    where
+    blSAL = A.elems blSAr  -- shape element list
+    blSL = tail blSAL -- process without target
+    targetPos = getBlkIP box 0
+    reducedInt = putBlIP addLmovB targetPos maxBd
+    addLmovB = putBlIP nearBoxKey (blSAr A.! maxBd) (maxBd - 1)
+    nearBoxKey = posL2box box sortedPossL
+    sortedPossL = map snd $ sort $ zip blSL posL0box
+    posL2box box_ posL = fbox posL box 0 where
+        fbox [] bx _ = bx --error ("posL2box: position list too short!")
+        fbox rposL bx nr = fbox (tail rposL) (putBlIP bx (head rposL) nr) (nr+1)
+    posL0box = map (getBlkIP box) [1 .. maxBd - 1]  -- posL0box without target
+    maxBd = snd (A.bounds blSAr)
+    --map (getBlkP 20302216961863071546456865382688) [0..13]
+    
+reduce :: BlkIdx -> PArray -> VMapKey
+reduce blk pz = reducedL  --go blsL M.empty
+    where
+--    go [] blM            = ((blk,0) : [targetPos]) : M.elems blM
+--    go (x@(pos, eL):xs) blM = go xs blSM
+--        where
+--        i = redBlM M.! blM1To0
+--        blM1To0 = map (sub pos) eL  -- shape of current block
+--        mby = M.lookup i blM
+--        blSM = case mby of
+--            Just old -> M.insert i (sort (old ++ [pos])) blM
+--            Nothing -> M.insert i ([pos]) blM
+
+--    blMSTo0 blL = (\(p,l) -> map (sub p) l) blL
+--    redBlL = map blMTo0 blsL -- list of block shapes (poses of elements) (no pos of block)
+--    redBlM = M.fromList $ zip redBlL [0::Int ..] -- map of (shape, blkIdx), shape is key
+
+    blsAL = A.elems pz  -- (pos, blockList) element lists
     blsL = tail blsAL -- process without target
-    (targetPos, targetBlL) = (blsAL !! 0)
-    blMTo0 blL = (\(p,l) -> map (sub p) l) blL
-    redBlL = map blMTo0 blsL
-    redBlM = M.fromList $ zip redBlL [0::Int ..]
+    (targetPos, targetBlL) = (pz A.! 0)
+    -- sorted by block shapes and then their positions, only positions used
+    blMTo0 blL = map snd $ sort $ map (\(p,l) -> (map (sub p) l, p)) blL
+    reducedL = (blk,0) : targetPos : (blMTo0 blsL)
+    
 
 -- Add puzzle p to the visited map with its parent.
 -- Return the updated map and Just p if p wasn’t previously visited,
@@ -480,16 +554,21 @@ main = do
         pz = map words p
         blM = createBlockMap bl pz
         blM_ = createBlockMap_ n bl pz
+        blM_lesbar = map (\(x,y) -> (x,(read (dec2bin y) :: Integer))) (M.toList $ createBlockMap_ n bl pz)
         blA = createBlockArray bl pz
-        blA_ = createBlockArray_ n bl pz
+        (blA_, blSA) = createBlockArrays n bl pz
+        blA_lesbar = zip [0..length bl - 1] (map (getBlkP blA_) [0..])
         isOneBlk (i, x) = (i, (length $ snd x) == 1)
         goal = (goalL !! 0, goalL !! 1)
     putStrLn $ show pz ++ "  Target: " ++ show targS ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx ++ " changed to 0"
     putStrLn $ "BlockMap: " ++ show blM
     putStrLn $ "BlockMap neu: " ++ show blM_
+    putStrLn $ "BlockMap neu (lesbar): " ++ show blM_lesbar
     putStrLn $ "Block Array: " ++ show blA
     putStrLn $ "Block Array neu: " ++ show blA_
+    putStrLn $ "Block Array neu (lesbar): " ++ show blA_lesbar
+    putStrLn $ "Block Shape Array: " ++ show blSA
     putStr $ findPuzzles (m, n) goal bl blA
 --    putStr ""
 {-
@@ -533,10 +612,11 @@ G H H I
 B
 3 1
 (sollten 102 sein)  "B","A","C","D","E","F","G","H","I","J"
+2:18
+1:52 after optimizing reduce to just [Coord']
 
-
-testcase 8:   5:32  ->  2:30 (eliminating p == parent in backstream, while mark as visited)
-5 4
+testcase 8:   5:32  ->  1:58 (eliminating p == parent in backstream, while mark as visited)
+5 4                           and optimize reduce to just sorted positions (blockshape then position)
 RW BS BS RS
 RW BS BS RS
 TW TS LW LS
