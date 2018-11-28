@@ -363,29 +363,15 @@ reduce_ blSAr box = reducedInt    -- go blsL M.empty
     nearBoxKey = posL2box box sortedPossL
     sortedPossL = map snd $ sort $ zip blSL posL0box
     posL2box box_ posL = fbox posL box 0 where
-        fbox [] bx _ = bx --error ("posL2box: position list too short!")
+        fbox [] bx _ = bx
         fbox rposL bx nr = fbox (tail rposL) (putBlIP bx (head rposL) nr) (nr+1)
     posL0box = map (getBlkIP box) [1 .. maxBd - 1]  -- posL0box without target
     maxBd = snd (A.bounds blSAr)
     --map (getBlkP 20302216961863071546456865382688) [0..13]
     
 reduce :: BlkIdx -> PArray -> VMapKey
-reduce blk pz = reducedL  --go blsL M.empty
+reduce blk pz = reducedL
     where
---    go [] blM            = ((blk,0) : [targetPos]) : M.elems blM
---    go (x@(pos, eL):xs) blM = go xs blSM
---        where
---        i = redBlM M.! blM1To0
---        blM1To0 = map (sub pos) eL  -- shape of current block
---        mby = M.lookup i blM
---        blSM = case mby of
---            Just old -> M.insert i (sort (old ++ [pos])) blM
---            Nothing -> M.insert i ([pos]) blM
-
---    blMSTo0 blL = (\(p,l) -> map (sub p) l) blL
---    redBlL = map blMTo0 blsL -- list of block shapes (poses of elements) (no pos of block)
---    redBlM = M.fromList $ zip redBlL [0::Int ..] -- map of (shape, blkIdx), shape is key
-
     blsAL = A.elems pz  -- (pos, blockList) element lists
     blsL = tail blsAL -- process without target
     (targetPos, targetBlL) = (pz A.! 0)

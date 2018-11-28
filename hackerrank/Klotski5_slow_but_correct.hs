@@ -19,7 +19,7 @@ import qualified ArrayExtensions as AE
 -- limits maximum coordinates to 16x16, while 6x6 would
 -- be sufficient based on hackerranks preconditions
 type Coord = Int8
-type BlkIdx = Int8
+type BlkIdx = Int
 type Coord' = (Int, Int)
 type Bla = Int      -- absolute Shape coordinates in box - "pixel" is a bit
 type Blr = Int      -- relative Shape - bit 20-23 y, bit 16-19 x, bit 0-15 Shape
@@ -39,7 +39,7 @@ type Shape = Int16
 
 type PArray = A.Array Int (Coord', [Coord'])
 type VMap = M.Map VMapKey ((Int,PArray), (Int,PArray))
-type VMapKey = [[Coord']]
+type VMapKey = [Coord']
 -- Vector addition.
 add (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
 sub (x1, y1) (x2, y2) = (x2 - x1, y2 - y1)
@@ -201,23 +201,15 @@ allMoves1_ rlc pz = [moveBlk rlc pz blk dirs |
 -- Find equal blocks (f.e. two steps vertical), sort and add them to list each
 -- use this as key for map, reducing to maps with same pattern only
 -- do not reduce target! target has index 0
---reduce :: PArray -> VMapKey
-reduce blk pz = go blsL M.empty where
-    go [] blM            = ((blk,0) : [targetPos]) : M.elems blM
-    go (x@(pos, eL):xs) blM = go xs blSM
-        where
-        i = redBlM M.! blM1To0
-        blM1To0 = map (sub pos) eL
-        mby = M.lookup i blM
-        blSM = case mby of
-            Just old -> M.insert i (sort (old ++ [pos])) blM
-            Nothing -> M.insert i ([pos]) blM
-    blsAL = A.elems pz
+reduce :: BlkIdx -> PArray -> VMapKey
+reduce blk pz = reducedL
+    where
+    blsAL = A.elems pz  -- (pos, blockList) element lists
     blsL = tail blsAL -- process without target
-    (targetPos, targetBlL) = (blsAL !! 0)
-    blMTo0 blL = (\(p,l) -> map (sub p) l) blL
-    redBlL = map blMTo0 blsL
-    redBlM = M.fromList $ zip redBlL [0::Int ..]
+    (targetPos, targetBlL) = (pz A.! 0)
+    -- sorted by block shapes and then their positions, only positions used
+    blMTo0 blL = map snd $ sort $ map (\(p,l) -> (map (sub p) l, p)) blL
+    reducedL = (blk,0) : targetPos : (blMTo0 blsL)
 
 -- Add puzzle p to the visited map with its parent.
 -- Return the updated map and Just p if p wasn’t previously visited,
@@ -428,10 +420,10 @@ G H H I
 B
 3 1
 (sollten 102 sein)  "B","A","C","D","E","F","G","H","I","J"
+1:52 after optimizing reduce to just [Coord']
 
-
-testcase 8:   5:32  ->  2:30 (eliminating p == parent in backstream, while mark as visited)
-5 4
+testcase 8:   5:32  ->  1:58 (eliminating p == parent in backstream, while mark as visited)
+5 4                           and optimize reduce to just sorted positions (blockshape then position)
 RW BS BS RS
 RW BS BS RS
 TW TS LW LS
