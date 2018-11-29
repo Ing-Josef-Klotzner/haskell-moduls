@@ -145,8 +145,8 @@ shape2Coord :: Int -> Shape -> Coord'
 shape2Coord n shape = shape `divMod` n
 -- convert from a list of coordinates to a block
 -- BlockR: relative Shape - bit 20-23 y, bit 16-19 x, bit 0-15 Shape
-coords2Block_ :: Int -> [Coord'] -> BlockR
-coords2Block_ n xs = inty .|. intx .|. (shiftR shape topLeftS)
+coords2Block_ :: Int -> Int -> [Coord'] -> BlockR
+coords2Block_ m n xs = inty .|. intx .|. (shiftR shape topLeftS)
     where
     topLeftS = go shape 0
     inty = shiftL (topLeftS `div` n) 20
@@ -160,14 +160,33 @@ coords2Block_ n xs = inty .|. intx .|. (shiftR shape topLeftS)
         isNotAtTop = shap .&. tREP == 0
         isInTopEdge = shap .&. lREP /= 0
     --topRowEdgePattern
-    tREP = 2^n - 1
+    tREP = tREP_ n
     --leftRowEdgePattern
-    lREP = 0x11111111
+    lREP = lREP_ m n
     shape = coords2Shape_ xs
-    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) (0::Int)
+    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) 0
 
-coords2Block' :: Int -> [Coord'] -> BlockR
-coords2Block' n xs = inty .|. intx .|. (shiftR shape topLeftS)
+lREP_ m n = go 0 m where 
+    go mkl 0 = mkl
+    go mkl m_ = go (mkl `setBit` ((m_ - 1) * n)) (m_ - 1)
+
+rREP_ m n = go 0 m where
+    go mkr 0 = mkr
+    go mkr m_ = go (mkr `setBit` ((m_ - 1) * n + n - 1)) (m_ - 1)
+
+tREP_ n = go 0 n where
+    go mkt 0 = mkt
+    go mkt n_ = go (mkt `setBit` (n_ - 1)) (n_ - 1)
+
+bREP_ m n = go 0 n where
+    go mkb 0 = mkb
+    go mkb n_ = go (mkb `setBit` ((n_ - 1) + n * (m - 1))) (n_ - 1)
+
+edgeFrame_ :: Int -> Int -> Int
+edgeFrame_ m n = lREP_ m n .|. rREP_ m n .|. tREP_ n .|. bREP_ m n
+
+coords2Block' :: Int -> Int -> [Coord'] -> BlockR
+coords2Block' m n xs = inty .|. intx .|. (shiftR shape topLeftS)
     where
     topLeftS = tLS shape
     inty = shiftL (topLeftS `div` n) 20
@@ -179,11 +198,11 @@ coords2Block' n xs = inty .|. intx .|. (shiftR shape topLeftS)
         isAtTop s = (shap `shiftR` s) .&. tREP /= 0
         isInTopEd s = (shap `shiftR` (s + vertical)) .&. lREP /= 0
     --topRowEdgePattern
-    tREP = 2^n - 1
+    tREP = tREP_ n
     --leftRowEdgePattern
-    lREP = 0x11111111
+    lREP = lREP_ m n
     shape = coords2Shape_ xs
-    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) (0::Int)
+    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) 0
 
 coords2Block :: Int -> [Coord'] -> BlockR
 coords2Block n xs = (shift (coor2Int topLeft) 16) .|. (coords2Shape_ xs)
@@ -192,8 +211,8 @@ coords2Block n xs = (shift (coor2Int topLeft) 16) .|. (coords2Shape_ xs)
     coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*(y - yt)+(x - xt)))) 0
 
 go x = foldr (\x -> (+ coords2Block 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
-go_ x = foldr (\x -> (+ coords2Block_ 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
-go' x = foldr (\x -> (+ coords2Block' 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+go_ x = foldr (\x -> (+ coords2Block_ 5 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+go' x = foldr (\x -> (+ coords2Block' 5 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
 -- convert from a block to a list of coordinates
 -- n is horizontal box dimension (from m x n)
 block2Coord's :: Int -> BlockR -> [Coord']
@@ -293,10 +312,36 @@ isWinT goal (blk,pz) = goal == (fst $ pz A.! 0)
 isWin :: Coord' -> PArray -> Bool
 isWin goal pz = goal == (fst $ pz A.! 0)
 
--- Try to move the blk in puzzle in direction dir. Return Just the new
--- puzzle, or Nothing if the move isn’t legal.
-moveBlk :: Coord' -> PArray -> Int -> [Coord'] -> [PArray]
-moveBlk rlc pz blk dirs_ = go dirs_ where
+-- Try to move the blk in puzzle in direction dir.
+-- Return puzzles with possible moved block - can be empty list
+moveBlk_ :: Coord' -> BSArray -> Box -> Int -> [Box]
+moveBlk_ rlc blSAr box blk = go (dirs_ n) where
+    othersBox = foldr fldF 0 othPossShps
+    fldF ((y,x), shape) box_ = box_ .|. (shape `shiftL` (y * n + x))
+        -- build abs shape of all blocks except blk
+    othPossShps = zip otherPoses otherShapes
+    otherShapes = (A.elems blSAr) \\ [currBlkRShape]
+    otherPoses = posL0box \\ [currBlkPos]
+    posL0box = map (getBlkP box) [0 .. maxBd - 1]
+    maxBd = snd (A.bounds blSAr)
+    xMax = n - 1; yMax = m - 1; (m, n) = rlc  -- right lower corner
+    currBlkPos@(y,x) = getBlkP box blk
+    currBlkRShape = blSAr A.! blk
+    currBlkShape = currBlkRShape `shiftL` (y * n + x)
+    go [] = []
+    go dirs''
+        | check = (putBlP box (add currBlkPos(fst $ head dirs'')) blk) : go (tail dirs'')
+        | otherwise = go (tail dirs'') where
+        dir = snd $ head dirs''
+        check = newNotInOtherBlks && newNotOut
+        new = currBlkShape `shift` dir
+        newNotInOtherBlks = new .&. othersBox == 0
+        newNotOut = currBlkShape .&. (edgeFrame_ m n) == 0
+
+-- Try to move the blk in puzzle in direction dir.
+-- Return puzzles with possible moved block - can be empty list
+moveBlk :: Coord' -> PArray -> Int -> [PArray]
+moveBlk rlc pz blk = go dirs where
     go [] = []
     go dirs''
         | check = (pz A.// [(blk, (blockPos, poses2))]) : go (tail dirs'')
@@ -322,53 +367,43 @@ moveBlk rlc pz blk dirs_ = go dirs_ where
 -- puzzles (with each parent in a tuple) that are reachable from them in exactly one move.
 --allMoves :: Coord' -> [PArray] -> [(PArray, PArray)]
 dirs = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+dirs_ n = [((0, -1),-1), ((0, 1),1), ((-1, 0),-1 * n), ((1, 0),n)]
 -- each blk is moved separatly in DFS
 allMovesD :: Foldable t =>
     Int -> b -> Coord' -> t (t1, PArray) -> [(PArray, b)]
 allMovesD blk parent rlc pzs = concatMap allMoves1 pzs where -- uniqFstTup $
-    allMoves1 (_,pz) = zip (moveBlk rlc pz blk dirs) (repeat parent)
+    allMoves1 (_,pz) = zip (moveBlk rlc pz blk) (repeat parent)
 -- not used - just for testing^
 -- Given a puzzle, return the list of different
 -- puzzles that are reachable from it (father) in exactly one move.
 --allMoves1_ :: Coord' -> PArray -> [PArray]
-allMoves1_ rlc pz = [moveBlk rlc pz blk dirs |
+allMoves1_ rlc pz = [moveBlk rlc pz blk |
                 blk <- A.indices pz]
-
-{-   breadth first search  (simple - without storing parents)
-1. Define a node to begin search; store it to queue
-2. Take a node from beginning of queue.
-    If found searched element, end and return "found"
-    else add all followers of this node to end of queue
-3. If queue is empty, all nodes were visited; end search and return "not found"
-4. Repeat from step 2.        
--}
-
--- Find equal blocks (f.e. two steps vertical), sort and add them to list each
--- use this as key for map, reducing to lists with same pattern only
--- do not reduce target! target has index 0
---reduce :: BlkIdx -> Box -> BoxKey
 
 -- 0-3 x blk1, 4-7 y blk1,... maxBd - 1
 -- at maxBd * 8: last moved block index -- leave it in box
 -- at (maxBd + 1) * 8: target y, target x
-
+-- sorted by block shapes and then their positions, only positions used
 reduce_ :: BSArray -> Box -> BoxKey
-reduce_ blSAr box = reducedInt    -- go blsL M.empty
+reduce_ blSAr box = reducedInt
     where
     blSAL = A.elems blSAr  -- shape element list
     blSL = tail blSAL -- process without target
     targetPos = getBlkIP box 0
     reducedInt = putBlIP addLmovB targetPos maxBd
     addLmovB = putBlIP nearBoxKey (blSAr A.! maxBd) (maxBd - 1)
-    nearBoxKey = posL2box box sortedPossL
+    nearBoxKey = posL2box sortedPossL
     sortedPossL = map snd $ sort $ zip blSL posL0box
-    posL2box box_ posL = fbox posL box 0 where
-        fbox [] bx _ = bx
-        fbox rposL bx nr = fbox (tail rposL) (putBlIP bx (head rposL) nr) (nr+1)
+    posL2box posL = foldr (\(pos,idx) box_ -> putBlIP box_ pos idx) box (zip posL [0..])
     posL0box = map (getBlkIP box) [1 .. maxBd - 1]  -- posL0box without target
     maxBd = snd (A.bounds blSAr)
     --map (getBlkP 20302216961863071546456865382688) [0..13]
-    
+
+-- test running funtion x times to see runtime
+gor f x = go [] x where
+    go y 0 = y
+    go y x = go (f x) (x - 1)
+
 reduce :: BlkIdx -> PArray -> VMapKey
 reduce blk pz = reducedL
     where
