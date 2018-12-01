@@ -237,20 +237,20 @@ go' :: (Enum a, Num a) => a -> BlockR
 go' x = foldr (\x -> (+ coords2Block' 5 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
 -- convert from a block to a list of coordinates
 -- n is horizontal box dimension (from m x n)
-block2Coord's :: Int -> BlockR -> [Coord']
-block2Coord's n blkR = shape2Coords
+block2Coord's :: Int -> Int -> BlockR -> [Coord']
+block2Coord's m n blkR = shape2Coords
     where
     shape = 0xFFFF .&. blkR
     topLeft = int2Coor $ (shift blkR (-16))
     shape2Coords = foldr (\z y -> if testBit shape z 
                                     then (add topLeft (divMod z n) : y)
-                                    else y) [] [0..(n^2-1)]
+                                    else y) [] [0..(m * n - 1)]
 
 -- absolute shape
-shape2Coords' :: Int -> BlockA -> [Coord']
-shape2Coords' n shape = foldr (\z y -> if testBit shape z 
+shape2Coords' :: Int -> Int -> BlockA -> [Coord']
+shape2Coords' m n shape = foldr (\z y -> if testBit shape z 
                                 then (divMod z n) : y
-                                else y) [] [0..(n^2-1)]
+                                else y) [] [0..(m * n - 1)]
 
 -- change from relative Box, blSAr to absolute block (shape)
 --toAbsBA :: Int -> BlockR -> BlockA
@@ -276,8 +276,8 @@ dec2bin x = concatMap show $ reverse $ decToBin' x
     decToBin' y = let (a,b) = quotRem y 2 
                     in [b] ++ decToBin' a
 
-createBlockMapF :: Ord a => Int -> [a] -> [[a]] -> M.Map a BlockR
-createBlockMapF n blk pz = go blk 0 0 M.empty where
+createBlockMapF :: Ord a => Int -> Int -> [a] -> [[a]] -> M.Map a BlockR
+createBlockMapF m n blk pz = go blk 0 0 M.empty where
     lp = length pz
     wp = length (pz !! 0)
     go [] pl pc blMap = blMap
@@ -289,7 +289,7 @@ createBlockMapF n blk pz = go blk 0 0 M.empty where
         where
         b = head bl
         l
-            | M.member b blMap = block2Coord's n $ blMap M.! b
+            | M.member b blMap = block2Coord's m n $ blMap M.! b
             | otherwise = []
         isB = b == pz !! pl !! pc
         el = l ++ [(pl, pc)]
@@ -320,9 +320,9 @@ createBlockMap blk pz = go blk 0 0 M.empty where
 -- element 0 of blockarray holds target block
 -- last element of blockPosarray (Box) holds last moved blockindex (default 0)
 -- just positions while BlockShapeArray holds shapes
-createBlockArrays :: Ord a => Int -> [a] -> [[a]] -> (Box, BSArray)
-createBlockArrays n blk pz =    
-    let blM = createBlockMapF n blk pz
+createBlockArrays :: Ord a => Int -> Int -> [a] -> [[a]] -> (Box, BSArray)
+createBlockArrays m n blk pz =    
+    let blM = createBlockMapF m n blk pz
         getBlR x = blM M.! x 
         arrL = zip [0..] (map (getBlkS . getBlR) blk)
         blockShapeArr = A.array (0, len - 1) arrL
@@ -508,7 +508,7 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
         goM :: BMap -> [Box] -> [Box] -> Int -> [Char]
         goM visitedM [] allPz1MA c
             -- for testing each level and show map (current, parent) or just next puzzles
-            | c < 99999 = go visitedM allPz1MA c
+            | c < 9999 = go visitedM allPz1MA c
 --            -- show puzzles of allPz1MA with their parents
             | otherwise = "\n" ++ show (length pz_parentL) ++ "\n" ++ 
 --                    concatMap (\(p,pa) -> showPz p ++
@@ -642,10 +642,13 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
         where
         allPosL = [[(y,x) | x <- [0..h]] |  y <- [0..v] ]
         blkIL = A.indices blSAr
-        posL blkidx = shape2Coords' n blkAShape where
+        
+        posL :: BlkIdx -> [Coord']
+        posL blkidx = shape2Coords' m n blkAShape where
             blkAShape = blkRShape `shiftL` (y * n + x)
             (y,x) = getBlkP pz blkidx
             blkRShape = blSAr A.! blkidx
+        getBlkDgt :: Coord' -> [Char]
         getBlkDgt pos
             | idxL == [] = map (const '.') (head blkL)
             | otherwise = blkL !! (snd $ head idxL)
@@ -777,10 +780,10 @@ main = do
         bl = moveToHead targIdx blo
         pz = map words p
         blM = createBlockMap bl pz
-        blMF = createBlockMapF n bl pz
-        blMFlesbar = map (\(x,y) -> (x,(read (dec2bin y) :: Integer))) (M.toList $ createBlockMapF n bl pz)
+        blMF = createBlockMapF m n bl pz
+        blMFlesbar = map (\(x,y) -> (x,(read (dec2bin y) :: Integer))) (M.toList $ createBlockMapF m n bl pz)
         blA = createBlockArray bl pz
-        blAF@(blA_, blSA) = createBlockArrays n bl pz
+        blAF@(blA_, blSA) = createBlockArrays m n bl pz
         blA_lesbar = zip [0..length bl] (map (getBlkP blA_) [0..])
         isOneBlk (i, x) = (i, (length $ snd x) == 1)
         goal = (goalL !! 0, goalL !! 1)
@@ -868,6 +871,14 @@ CC .. BB
 CC DD DD
 .. .. EE
 EE
+1 1
+
+4 3
+WT WT ST
+WR .. ST
+WR SR SR
+.. .. SK
+SK
 1 1
 
 EE (3,2) (3,0)
