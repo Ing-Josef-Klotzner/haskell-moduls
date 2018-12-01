@@ -544,12 +544,10 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
                 moveBlkF :: Box -> [Box]
                 moveBlkF box = go (dirs_ n) where
                     -- build abs shape of all blocks except blk
-                    othersBox = foldr fldF 0 othPossShps
-                    fldF ((y,x), shape) box_ = box_ .|. (shape `shiftL` (y * n + x))
-                    othersIdxs = blkIL \\ [blk]
-                    othPossShps = zip otherPoses otherShapes
-                    otherShapes = map (blSAr A.!) othersIdxs
-                    otherPoses = map (getBlkP box) othersIdxs
+                    othersBox = foldr fldF 0 othPossShps_
+                    fldF ((y,x), shape, _) box_ = box_ .|. (shape `shiftL` (y * n + x))
+                    othPossShps_ = filter (\(_,_,idx) -> idx /= blk) $ zip3 posL blSL [0..]
+                    posL = map (getBlkP box) [0 .. maxBd]
                     currBlkPos@(y,x) = getBlkP box blk
                     currBlkAShape = currBlkRShape `shiftL` (y * n + x)
                     go [] = []
@@ -796,8 +794,7 @@ main = do
     putStrLn $ "Block Array neu (lesbar): " ++ show blA_lesbar
     putStrLn $ "Block Shape Array: " ++ show blSA
     putStr $ findPuzzlesF (m, n) goal bl blAF
-    putStr $ findPuzzles (m, n) goal bl blA
---    putStr ""
+--    putStr $ findPuzzles (m, n) goal bl blA
 {-
     putStrLn $ "reduced Block List: " ++ show (reduce blA)
     putStrLn $ show (allMoves1_ (m, n) blA)
