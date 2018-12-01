@@ -61,6 +61,13 @@ getBlkP box idx = int2Coor $ fromInteger $ box `shiftR` offset .&. mask
     mask = 0xFF
     offset = idx * 8
 
+-- delete block position from box
+delBlk :: Box -> Int -> Box
+delBlk box idx = box .&. mask
+    where
+    mask = complement $ 0xFF `shiftL` offset -- for erase old
+    offset = idx * 8
+
 -- put block position to box
 putBlIP :: Box -> Coord -> BlkIdx -> Box
 putBlIP box pos idx = box .&. mask .|. (toInteger pos) `shiftL` offset
@@ -89,9 +96,13 @@ getBlkS block = block .&. mask
     mask = 0xFFFF
 
 -- Vector addition.
+add :: (Num t, Num t1) => (t, t1) -> (t, t1) -> (t, t1)
 add (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
+sub :: (Num t, Num t1) => (t, t1) -> (t, t1) -> (t, t1)
 sub (x1, y1) (x2, y2) = (x2 - x1, y2 - y1)
 -- getDir from to
+getDir :: (Num t, Num t1, Num a, Num a1, Ord a, Ord a1) =>
+    (a, a1) -> (a, a1) -> (t, t1)
 getDir (x, y) (x1, y1) = (dir (x1 - x),dir (y1 - y))
     where
     dir x_
@@ -122,7 +133,9 @@ getLn x = do
     cs <- getLn (x - 1)
     return ([cu] ++ cs)
 
+nMax :: Integer
 nMax = 6  -- maximum size of puzzle
+xMax :: Integer
 xMax = 3  -- maximum size of block - must be <= 4 !!
 -- convert 2 coordinate variables to one Int
 -- upper half byte y, lower half byte x
@@ -167,18 +180,22 @@ coords2Block_ m n xs = inty .|. intx .|. (shiftR shape topLeftS)
     shape = coords2Shape_ xs
     coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) 0
 
+lREP_ :: (Num a, Bits a) => Int -> Int -> a
 lREP_ m n = go 0 m where 
     go mkl 0 = mkl
     go mkl m_ = go (mkl `setBit` ((m_ - 1) * n)) (m_ - 1)
 
+rREP_ :: (Num a, Bits a) => Int -> Int -> a
 rREP_ m n = go 0 m where
     go mkr 0 = mkr
     go mkr m_ = go (mkr `setBit` ((m_ - 1) * n + n - 1)) (m_ - 1)
 
+tREP_ :: (Num a, Bits a) => Int -> a
 tREP_ n = go 0 n where
     go mkt 0 = mkt
     go mkt n_ = go (mkt `setBit` (n_ - 1)) (n_ - 1)
 
+bREP_ :: (Num a, Bits a) => Int -> Int -> a
 bREP_ m n = go 0 n where
     go mkb 0 = mkb
     go mkb n_ = go (mkb `setBit` ((n_ - 1) + n * (m - 1))) (n_ - 1)
@@ -212,8 +229,11 @@ coords2Block n xs = (shift (coor2Int topLeft) 16) .|. (coords2Shape_ xs)
     topLeft@(yt,xt) = (minimum . map fst &&& minimum . map snd) xs
     coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*(y - yt)+(x - xt)))) 0
 
+go :: (Enum a, Num a) => a -> BlockR
 go x = foldr (\x -> (+ coords2Block 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+go_ :: (Enum a, Num a) => a -> BlockR
 go_ x = foldr (\x -> (+ coords2Block_ 5 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+go' :: (Enum a, Num a) => a -> BlockR
 go' x = foldr (\x -> (+ coords2Block' 5 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
 -- convert from a block to a list of coordinates
 -- n is horizontal box dimension (from m x n)
@@ -249,6 +269,7 @@ toAbsB n blkR = shape `shiftL` (y * n + x)
 ofB'2BlA :: Int -> BlockR' -> BlockA
 ofB'2BlA n ((y,x),shape) = shape `shiftL` (y * n + x)
 
+dec2bin :: (Integral a, Show a) => a -> [Char]
 dec2bin x = concatMap show $ reverse $ decToBin' x
   where
     decToBin' 0 = [0]
@@ -360,7 +381,9 @@ moveBlk rlc pz blk = go dirs where
 -- Given a list of puzzles, return the list of different
 -- puzzles (with each parent in a tuple) that are reachable from them in exactly one move.
 --allMoves :: Coord' -> [PArray] -> [(PArray, PArray)]
+dirs :: [(Int, Int)]
 dirs = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+dirs_ :: (Num t, Num t1, Num t2) => t -> [((t1, t2), t)]
 dirs_ n = [((0, -1),-1), ((0, 1),1), ((-1, 0),-1 * n), ((1, 0),n)]
 -- each blk is moved separatly in DFS
 allMovesD :: Foldable t =>
@@ -376,7 +399,7 @@ allMoves1_ rlc pz = [moveBlk rlc pz blk |
 
 -- 4-7 target y, 0-3 target x   -- leave it in box
 -- 12-15 y blk1, 8-11 x blk1,... 
--- at maxBd * 8: last moved block index -- leave it in box
+-- at (maxBd + 1) * 8: last moved block index -- leave it in box
 -- sorted by block shapes and then their positions, only positions used
 reduceF :: BSArray -> Box -> BoxKey
 reduceF blSAr box = posL2box sortedPossL
@@ -387,13 +410,15 @@ reduceF blSAr box = posL2box sortedPossL
 
     sortedPossL = map snd $ sort $ zip blSL posL0box
     posL2box posL = foldr (\(pos,idx) box_ -> putBlIP box_ pos idx) box (zip posL [1..])
-    posL0box = map (getBlkIP box) [1 .. maxBd - 1]  -- posL0box without target
+    posL0box = map (getBlkIP box) [1 .. maxBd]  -- posL0box without target
     --map (getBlkP 20302216961863071546456865382688) [0..13]
 
 -- test running funtion x times to see runtime
+goL :: (Eq a, Num a) => (a -> [t]) -> a -> [t]
 goL f x = go [] x where
     go y 0 = y
     go y x = go (f x) (x - 1)
+goN :: (Eq a, Num a, Num t) => (a -> t) -> a -> t
 goN f x = go 0 x where
     go y 0 = y
     go y x = go (f x) (x - 1)
@@ -437,22 +462,12 @@ reduce blk pz = reducedL
 -- Return the updated map and Just p if p wasn’t previously visited,
 -- Nothing otherwise. Use addPositionM for multiple step moves mode instead of steps
 --addPosition :: VMap -> (PArray, PArray) -> (VMap, Maybe PArray)
-addPosition_ blkpa blk visited (p, parent) = (visited', q)
-    where 
-    old_p_parent = M.lookup (reduce blk p) visited
-    (visited', q) = case old_p_parent of
-        Nothing -> (M.insert (reduce blk p) ((blk, p), (blkpa,parent)) visited, Just p)
-        Just _ -> (visited, Nothing)
-        where
-        isEqual = p == parent
 addPosition blkpa blk visited (p, parent) = (visited', q)
     where 
     old_p_parent = M.lookup (reduce blk p) visited
     (visited', q) = case old_p_parent of
         Nothing -> (M.insert (reduce blk p) ((blk, p), (blkpa,parent)) visited, Just p)
         Just _ -> (visited, Nothing)
-        where
-        isEqual = p == parent
 
 -- take visited map and list of puzzles with each parent to store to visited map
 -- return updated map and new puzzles (not previously already in visited map)
@@ -476,7 +491,7 @@ newPositionsD blkpa parent blk rlc visited curr_pzs =
 
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
---findPuzzles :: Coord' -> Coord' -> [[Char]] -> PArray -> [Char]
+findPuzzlesF :: Coord' -> Coord' -> [[Char]] -> (Box, BSArray) -> [Char]
 findPuzzlesF rlc goal blkL (start, blSAr) = 
         go (M.singleton (reduceF blSAr start) (start, root)) [start] 0 where
     go _ [] c = "sorry, no solution found after cycles: " ++ show c
@@ -490,21 +505,24 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
         out vmap pzL = cvtToOut (blkStepsL vmap (minimum $ [winPz pzL]))
 
         -- getting next level moves
+        goM :: BMap -> [Box] -> [Box] -> Int -> [Char]
         goM visitedM [] allPz1MA c
             -- for testing each level and show map (current, parent) or just next puzzles
-            | c < 579999 = go visitedM allPz1MA c
+            | c < 99999 = go visitedM allPz1MA c
 --            -- show puzzles of allPz1MA with their parents
             | otherwise = "\n" ++ show (length pz_parentL) ++ "\n" ++ 
 --                    concatMap (\(p,pa) -> showPz p ++
 --                    " block, parent:\n" ++ showPz pa) pz_parentL
-                    concatMap (\(p,pa) -> showPz p ++ show b ++
-                    " block, parent block: " ++ show blkpa ++ "\n" ++ showPz pa) pz_parentL
+                    concatMap (\(p,pa) -> showPz p ++ show (lblk p) ++
+                    " block, parent block: " ++ show (lblk pa) ++ "\n" ++ showPz pa) pz_parentL
             where
-            blkpa = getBlkP (maxBd + 1); b = getBlkP (maxBd + 1)
+            pz_parentL :: [(Box, Box)]
             pz_parentL = map createPPar allPz1MA
 --            createPPar (blk, pz) = (pz, parent blk pz) where
+            createPPar :: Box -> (Box, Box)
             createPPar pz = (pz, parent) where
-                parent = visitedM M.! (reduce blSAr pz)
+                parent = snd $ visitedM M.! (reduceF blSAr pz)
+            lblk pz = getBlkIP pz (maxBd + 1)
         goM visitedM (pz : pzsMR) allPz1MA c 
                 = goD visitedM geoBlkIL [pz] allPz1MA c
         -- Depth first search with each block, target last
@@ -523,15 +541,15 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
 
                 -- Try to move the blk in puzzle in direction dir.
                 -- Return puzzles with possible moved block - can be empty list
-                moveBlkF :: BSArray -> Box -> [Box]
+                moveBlkF :: Box -> [Box]
                 moveBlkF box = go (dirs_ n) where
+                    -- build abs shape of all blocks except blk
                     othersBox = foldr fldF 0 othPossShps
                     fldF ((y,x), shape) box_ = box_ .|. (shape `shiftL` (y * n + x))
-                    -- build abs shape of all blocks except blk
+                    othersIdxs = blkIL \\ [blk]
                     othPossShps = zip otherPoses otherShapes
-                    otherShapes = blSL \\ [currBlkRShape]
-                    otherPoses = posL0box \\ [currBlkPos]
-                    posL0box = map (getBlkP box) [0 .. maxBd - 1]
+                    otherShapes = map (blSAr A.!) othersIdxs
+                    otherPoses = map (getBlkP box) othersIdxs
                     currBlkPos@(y,x) = getBlkP box blk
                     currBlkAShape = currBlkRShape `shiftL` (y * n + x)
                     go [] = []
@@ -548,37 +566,45 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
                             (0, 1) -> chk rREP_
                             (-1, 0) -> currBlkAShape .&. (tREP_ n) == 0
                             (1, 0) -> chk bREP_
+                allMovesF :: Box -> [(Box)] -> [(Box, Box)]
                 allMovesF parent pzs = concatMap allMoves1 pzs where
                     allMoves1 pz = zip (moveBlkF pz) (repeat parent)
-                addPositionF blk visited (p, parent) = (visited', q)
+                addPositionF :: BMap -> (Box, Box) -> (BMap, Maybe Box)
+                addPositionF visited (p, parent) = (visited', q)
                     where 
-                    old_p_parent = M.lookup (reduce blSAr p) visited
+                    old_p_parent = M.lookup (reduceF blSAr p) visited
                     (visited', q) = case old_p_parent of
-                        Nothing -> (M.insert (reduce blSAr p) (p, parent) visited, Just p)
+                        Nothing -> (M.insert (reduceF blSAr p) (p, parent) visited, Just p)
                         Just _ -> (visited, Nothing)
-                        where
-                        isEqual = p == parent
+                addPositionsF :: BMap -> [(Box, Box)] -> (BMap, [Box])
                 addPositionsF visited [] = (visited, [])
                 addPositionsF visited ((p, parent) : ps) = (visited'', qs)
                     -- do not process again, if p == parent, but store as visited
                     where
                     qs = case q of
                         Just p' -> case () of
-                            _ | p' == parent -> ps'
-                            _ | otherwise -> (addLastBlock p'):ps'
+                            _ | p_ == parent_ -> ps'
+                            _ | otherwise -> (addLastBlock p') : ps'
+                            where
+                            -- parent without last block
+                            parent_ = delBlk parent (maxBd + 1)
+                            p_ = delBlk p' (maxBd + 1)
                         Nothing -> ps'
                     (visited', ps') = addPositionsF visited ps
-                    (visited'', q) = addPositionF visited' (p, parent)
-                    -- last block in box p' packen
+                    (visited'', q) = addPositionF visited' (p'', parent)
+                    -- last block in box p packen
                     addLastBlock x = putBlIP x blk (maxBd + 1)
+                    p'' = addLastBlock p
 
                 -- Given the map of visited puzzles and the list
                 -- of current puzzles, return an updated map with all next moves
+                newPositionsD :: Box -> BMap -> [Box] -> (BMap, [Box])
                 newPositionsD parent visited curr_pzs = 
                     addPositionsF visited (allMovesF parent curr_pzs)
         
     maxBd = snd (A.bounds blSAr)
     blSL = A.elems blSAr
+    blkIL = A.indices blSAr
     (m, n) = rlc  -- box dimensions
 
     v = m - 1; h = n - 1  --vMax, hMax
@@ -589,22 +615,25 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
         -> compare ((v-y1)^2+(h-x1)^2) ((v-y2)^2+(h-x2)^2)) p
     geoSorIdxL p = map (\(idx,(pos,posL)) -> idx) $ geoSrt (assocs_ p)
     assocs_ x = zip [0..maxBd] (map (getBlkP x) [0..])
---    blkIL = A.indices start
     winPz pzss = filter (isWinF goal) pzss
     -- map list of puzzles from start to winning puzzle
+    getPathL :: BMap -> [Box] -> [Box]
     getPathL vstd pzss = go [head pzss] where
         go pathL
             | parent == root = pathL 
             | otherwise = go (parent : pathL) where
-            (_, parent) = vstd M.! (reduce blSAr (head pathL))
+            (_, parent) = vstd M.! (reduceF blSAr (head pathL))
     -- create list of blocks and their single step moves by finding 
     -- the different blocks of neighboring puzzles of solution path
+    
+    blkStepsL :: BMap -> [Box] -> [([Char], Coord', Coord')]
     blkStepsL vstd pzss = map blkMove blkLNeighborsL where
         posAL = map assocs_ (getPathL vstd pzss)
         blkLNeighborsL = zip posAL (tail posAL)
         blkMove (l1, l2) = head $ map cvtToBlkMvs $ filter diffItems $ zip l1 l2 where
             cvtToBlkMvs ((i, blkP), (i1, blkP1)) = ((blkL !! i), blkP, blkP1)
             diffItems (x, y) = x /= y
+--    cvtToOut :: _
     cvtToOut blkmvL = show len ++ "\n" ++ (unlines $ map str blkmvL)
         where
         len = length blkmvL
@@ -644,7 +673,7 @@ findPuzzles rlc goal blkL start =
         -- getting next level moves
         goM visitedM [] allPz1MA c
             -- for testing each level and show map (current, parent) or just next puzzles
-            | c < 579999 = go visitedM allPz1MA c
+            | c < 99999 = go visitedM allPz1MA c
 --            -- show puzzles of allPz1MA with their parents
             | otherwise = "\n" ++ show (length pz_parentL) ++ "\n" ++ 
 --                    concatMap (\(p,pa) -> showPz p ++
@@ -757,7 +786,7 @@ main = do
         blA_lesbar = zip [0..length bl] (map (getBlkP blA_) [0..])
         isOneBlk (i, x) = (i, (length $ snd x) == 1)
         goal = (goalL !! 0, goalL !! 1)
-    putStrLn $ show pz ++ "  Target: " ++ show targS ++ " " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
+    putStrLn $ show pz ++ "  Target: " ++ show targS ++ " Goal: " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx ++ " changed to 0"
     putStrLn $ "BlockMap: " ++ show blM
     putStrLn $ "BlockMap neu: " ++ show blMF
