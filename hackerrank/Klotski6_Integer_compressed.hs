@@ -14,32 +14,81 @@ import qualified Data.Array as A
 import qualified Data.Maybe as Maybe
 import qualified ArrayExtensions as AE
 import Prelude hiding ( minimum, concat, notElem, concatMap, all, mapM_, foldr)
--- import GHC.Exts
 -- 2 coordinate variables y and x are brought to 1 Int8
 -- upper 4 bits is y, lower 4 bits is x 
 -- limits maximum coordinates to 16x16, while 6x6 would
 -- be sufficient based on hackerranks preconditions
+type Coord = Int
 type BlkIdx = Int
-type Coord = (Int, Int)
+type Coord' = (Int, Int)
 -- change from relative to abs shape coordinates by shifting fCoor bits
 -- fCoor = y * n + x
-type BlockAI = Int  -- absolute shape
-type BlockA = [Coord]
-type BlockRI = Int      -- relative Shape - bit 20-23 y, bit 16-19 x, bit 0-15 Shape
-type Block = (Coord, [Coord])
-type BlockS = (Coord, Shape)
+type BlockA = Int  -- absolute shape
+type BlockR = Int      -- relative Shape - bit 20-23 y, bit 16-19 x, bit 0-15 Shape
+type BlockR' = (Coord', Shape)
+type Block = (Coord, Shape)
 -- 0-3 x blk0, 4-7 y blk0 ... length blk - 1
 -- at length blk * 8: last moved block index
 -- at (length blk + 1) * 8: target y, target x
-type BoxKey = [Coord]
+type BoxKey = Integer
+-- bits 0-7 Blockindex, bits 8-11 to x, bits 12-15 to y,
+--                      bits 16-19 from x, bits 20-23 from y
 --   16 bits to store maximum 4x4 Block
 type Shape = Int
 -- index 0 target block
 -- last index is last moved blockindex; Arrangement bits:
 -- 0-7 last block index in BlockArray, 8-11 x block 0, 12-15 y block 0, ...
-type BMap = M.Map BoxKey (Box, Box)
-type Box = A.Array Int Coord
+type Box = Integer  -- just block positions, except index of last moved block
 type BSArray = A.Array Int Shape   -- block shape array
+type BMap = M.Map BoxKey (Box, Box)
+
+-- put block position to box
+putBlP :: Box -> Coord' -> BlkIdx -> Box
+putBlP box pos idx = box .&. mask .|. (toInteger $ coor2Int pos) `shiftL` offset
+    where
+    mask = complement $ 0xFF `shiftL` offset -- for erase old
+    offset = idx * 8
+
+-- get block position from box
+getBlkP :: Box -> Int -> Coord'
+getBlkP box idx = int2Coor $ fromInteger $ box `shiftR` offset .&. mask
+    where
+    mask = 0xFF
+    offset = idx * 8
+
+-- delete block position from box
+delBlk :: Box -> Int -> Box
+delBlk box idx = box .&. mask
+    where
+    mask = complement $ 0xFF `shiftL` offset -- for erase old
+    offset = idx * 8
+
+-- put block position to box
+putBlIP :: Box -> Coord -> BlkIdx -> Box
+putBlIP box pos idx = box .&. mask .|. (toInteger pos) `shiftL` offset
+    where
+    mask = complement $ 0xFF `shiftL` offset -- for erase old
+    offset = idx * 8
+
+-- get block position from box
+getBlkIP :: Box -> Int -> Coord
+getBlkIP box idx = fromInteger $ box `shiftR` offset .&. mask
+    where
+    mask = 0xFF
+    offset = idx * 8
+
+-- get coordinates of BlockR
+getBlkCo :: BlockR -> Coord'
+getBlkCo block = int2Coor $ block `shiftR` offset .&. mask
+    where
+    mask = 0xFF
+    offset = 16
+
+-- get shape of BlockR
+getBlkS :: BlockR -> Shape
+getBlkS block = block .&. mask
+    where
+    mask = 0xFFFF
 
 -- Vector addition.
 add :: (Num t, Num t1) => (t, t1) -> (t, t1) -> (t, t1)
@@ -83,13 +132,49 @@ nMax :: Integer
 nMax = 6  -- maximum size of puzzle
 xMax :: Integer
 xMax = 3  -- maximum size of block - must be <= 4 !!
+-- convert 2 coordinate variables to one Int
+-- upper half byte y, lower half byte x
+coor2Int :: Coord' -> Coord
+-- coor2Int (y, x) = x .|. shift y 4
+coor2Int (y, x) = y * 16 + x
+
+-- convert Int to 2 coordinate variables
+int2Coor :: Coord -> Coord'
+-- int2Coor int = (int `shiftR` 0x4, int .&. 0xF)
+int2Coor int = int `divMod` 16
+
+int2y :: Coord -> Int
+int2y int = int `div` 16
+int2x int = int `mod` 16
 
 -- encode coordinates to shape
-coords2Shape :: (Foldable f) => Int -> f Coord -> Shape
+coords2Shape :: (Foldable f) => Int -> f Coord' -> Shape
 coords2Shape n = foldr (\(y,x) -> (`setBit` (n*y+x))) 0
 -- shape to coordinates (absolute) - to convert topLeft (1 set bit)
-shape2Coord :: Int -> Shape -> Coord
+shape2Coord :: Int -> Shape -> Coord'
 shape2Coord n shape = shape `divMod` n
+-- convert from a list of coordinates to a block
+-- BlockR: relative Shape - bit 20-23 y, bit 16-19 x, bit 0-15 Shape
+coords2Block_ :: Int -> Int -> [Coord'] -> BlockR
+coords2Block_ m n xs = inty .|. intx .|. (shiftR shape topLeftS)
+    where
+    topLeftS = go shape 0
+    inty = shiftL (topLeftS `div` n) 20
+    intx = shiftL (topLeftS `mod` n) 16
+    go :: Int -> Int -> Int
+    go shap x
+        | isNotAtTop = go (shiftR shap n) (x + n)
+        | isInTopEdge = x
+        | otherwise = go (shiftR shap 1) (x + 1)
+        where
+        isNotAtTop = shap .&. tREP == 0
+        isInTopEdge = shap .&. lREP /= 0
+    --topRowEdgePattern
+    tREP = tREP_ n
+    --leftRowEdgePattern
+    lREP = lREP_ m n
+    shape = coords2Shape_ xs
+    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) 0
 
 lREP_ :: (Num a, Bits a) => Int -> Int -> a
 lREP_ m n = go 0 m where 
@@ -111,6 +196,58 @@ bREP_ m n = go 0 n where
     go mkb 0 = mkb
     go mkb n_ = go (mkb `setBit` ((n_ - 1) + n * (m - 1))) (n_ - 1)
 
+-- not used
+edgeFrame_ :: Int -> Int -> Int
+edgeFrame_ m n = lREP_ m n .|. rREP_ m n .|. tREP_ n .|. bREP_ m n
+
+coords2Block' :: Int -> Int -> [Coord'] -> BlockR
+coords2Block' m n xs = inty .|. intx .|. (shiftR shape topLeftS)
+    where
+    topLeftS = tLS shape
+    inty = shiftL (topLeftS `div` n) 20
+    intx = shiftL (topLeftS `mod` n) 16
+    tLS shap = vertical + horizontal
+        where
+        vertical = head $ filter isAtTop [0,n..]
+        horizontal = head $ filter isInTopEd [0..]
+        isAtTop s = (shap `shiftR` s) .&. tREP /= 0
+        isInTopEd s = (shap `shiftR` (s + vertical)) .&. lREP /= 0
+    --topRowEdgePattern
+    tREP = tREP_ n
+    --leftRowEdgePattern
+    lREP = lREP_ m n
+    shape = coords2Shape_ xs
+    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*y+x))) 0
+
+coords2Block :: Int -> [Coord'] -> BlockR
+coords2Block n xs = (shift (coor2Int topLeft) 16) .|. (coords2Shape_ xs)
+    where
+    topLeft@(yt,xt) = (minimum . map fst &&& minimum . map snd) xs
+    coords2Shape_ = foldr (\(y,x) -> (`setBit` (n*(y - yt)+(x - xt)))) 0
+
+go :: (Enum a, Num a) => a -> BlockR
+go x = foldr (\x -> (+ coords2Block 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+go_ :: (Enum a, Num a) => a -> BlockR
+go_ x = foldr (\x -> (+ coords2Block_ 5 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+go' :: (Enum a, Num a) => a -> BlockR
+go' x = foldr (\x -> (+ coords2Block' 5 4 [(3,1),(2,2),(2,3),(3,2),(3,3),(4,1),(4,2),(4,3)])) 0 [1..x]
+-- convert from a block to a list of coordinates
+-- n is horizontal box dimension (from m x n)
+block2Coord's :: Int -> Int -> BlockR -> [Coord']
+block2Coord's m n blkR = shape2Coords
+    where
+    shape = 0xFFFF .&. blkR
+    topLeft = int2Coor $ (shift blkR (-16))
+    shape2Coords = foldr (\z y -> if testBit shape z 
+                                    then (add topLeft (divMod z n) : y)
+                                    else y) [] [0..(m * n - 1)]
+
+-- absolute shape
+shape2Coords' :: Int -> Int -> BlockA -> [Coord']
+shape2Coords' m n shape = foldr (\z y -> if testBit shape z 
+                                then (divMod z n) : y
+                                else y) [] [0..(m * n - 1)]
+
 dec2bin :: (Integral a, Show a) => a -> [Char]
 dec2bin x = concatMap show $ reverse $ decToBin' x
   where
@@ -118,14 +255,8 @@ dec2bin x = concatMap show $ reverse $ decToBin' x
     decToBin' y = let (a,b) = quotRem y 2 
                     in [b] ++ decToBin' a
 
--- absolute shape
-shape2Coords' :: Int -> Int -> BlockAI -> [Coord]
-shape2Coords' m n shape = foldr (\z y -> if testBit shape z 
-                                then (divMod z n) : y
-                                else y) [] [0..(m * n - 1)]
-
-createBlockMap :: Ord a => [a] -> [[a]] -> M.Map a Block
-createBlockMap blk pz = go blk 0 0 M.empty where
+createBlockMapF :: Ord a => Int -> Int -> [a] -> [[a]] -> M.Map a BlockR
+createBlockMapF m n blk pz = go blk 0 0 M.empty where
     lp = length pz
     wp = length (pz !! 0)
     go [] pl pc blMap = blMap
@@ -137,38 +268,40 @@ createBlockMap blk pz = go blk 0 0 M.empty where
         where
         b = head bl
         l
-            | M.member b blMap = snd $ blMap M.! b
+            | M.member b blMap = block2Coord's m n $ blMap M.! b
             | otherwise = []
         isB = b == pz !! pl !! pc
         el = l ++ [(pl, pc)]
-        bleMap = M.insert b ((0,0), el) blMap
-        blockPos = (\(y, x) -> (minimum y, minimum x)) $ unzip l
-        blPMap = M.insert b (blockPos, l) blMap
+        bleMap = M.insert b (coords2Block n el) blMap
+        blPMap = M.insert b (coords2Block n l) blMap
 
 -- element 0 of blockarray holds target block
 -- last element of blockPosarray (Box) holds last moved blockindex (default 0)
 -- just positions while BlockShapeArray holds shapes
-createBlockArrayF :: Ord a => Int -> [a] -> [[a]] -> (Box, BSArray)
-createBlockArrayF n blk pz =    
-    let blM = createBlockMap blk pz
-        getBl x = blM M.! x 
-        arrL = zip [0..] (map (createShape . getBl) blk)
-        createShape (pos, blAbsPosL) = coords2Shape n $ map (sub pos) blAbsPosL
+createBlockArrays :: Ord a => Int -> Int -> [a] -> [[a]] -> (Box, BSArray)
+createBlockArrays m n blk pz =    
+    let blM = createBlockMapF m n blk pz
+        getBlR x = blM M.! x 
+        arrL = zip [0..] (map (getBlkS . getBlR) blk)
         blockShapeArr = A.array (0, len - 1) arrL
-        parrL = zip [0..] ((map (fst . getBl) blk) ++ [(0,0)])
-        blockPosArr = A.array (0, len) parrL
+        blockPosArr = box_ 0 0 where
+            box_ bx nr
+                | nr == len = putBlIP bx 0 len
+                | otherwise = box_ (putBlP bx pos nr) (nr+1)
+                where
+                pos = getBlkCo $ getBlR (blk !! nr)
         len = length blk
 --        blockCoordsL = map (coor2Int $ getBlkCo) blk
     in (blockPosArr, blockShapeArr)
 
 -- Is this a winning position? target has index 0
 --isWin :: (Eq a, Num i, A.Ix i) => a -> A.Array i (a, b) -> Bool
-isWinF :: Coord -> Box -> Bool
-isWinF goal box = goal == box A.! 0
+isWinF :: Coord' -> Box -> Bool
+isWinF goal box = goal == getBlkP box 0
 
 -- Given a list of puzzles, return the list of different
 -- puzzles (with each parent in a tuple) that are reachable from them in exactly one move.
---allMoves :: Coord -> [PArray] -> [(PArray, PArray)]
+--allMoves :: Coord' -> [PArray] -> [(PArray, PArray)]
 dirs :: [(Int, Int)]
 dirs = [(0, -1), (0, 1), (-1, 0), (1, 0)]
 dirs_ :: (Num t, Num t1, Num t2) => t -> [((t1, t2), t)]
@@ -179,27 +312,20 @@ dirs_ n = [((0, -1),-1), ((0, 1),1), ((-1, 0),-1 * n), ((1, 0),n)]
 -- at (maxBd + 1) * 8: last moved block index -- leave it in box
 -- sorted by block shapes and then their positions, only positions used
 reduceF :: BSArray -> Box -> BoxKey
-reduceF blSAr box = (box A.! maxBd) : (box A.! 0) : sortedPossL
+reduceF blSAr box = posL2box sortedPossL
     where
     blSAL = A.elems blSAr  -- shape element list
     blSL = tail blSAL -- process without target
-    maxBd = snd (A.bounds box)
-    sortedPossL = map snd $ sort $ zip blSL posL0box
-    posL0box = tail $ A.elems box  -- posL0box without target
+    maxBd = snd (A.bounds blSAr)
 
--- test running funtion x times to see runtime
-goL :: (Eq a, Num a) => (a -> [t]) -> a -> [t]
-goL f x = go [] x where
-    go y 0 = y
-    go y x = go (f x) (x - 1)
-goN :: (Eq a, Num a, Num t) => (a -> t) -> a -> t
-goN f x = go 0 x where
-    go y 0 = y
-    go y x = go (f x) (x - 1)
+    sortedPossL = map snd $ sort $ zip blSL posL0box
+    posL2box posL = foldr (\(pos,idx) box_ -> putBlIP box_ pos idx) box (zip posL [1..])
+    posL0box = map (getBlkIP box) [1 .. maxBd]  -- posL0box without target
+    --map (getBlkP 20302216961863071546456865382688) [0..13]
 
 -- Go level by level (level = all puzzles reachable with 1 step) 
 -- through all reachable puzzles from starting puzzle
-findPuzzlesF :: Coord -> Coord -> [[Char]] -> (Box, BSArray) -> [Char]
+findPuzzlesF :: Coord' -> Coord' -> [[Char]] -> (Box, BSArray) -> [Char]
 findPuzzlesF rlc goal blkL (start, blSAr) = 
         go (M.singleton (reduceF blSAr start) (start, root)) [start] 0 where
     go _ [] c = "sorry, no solution found after cycles: " ++ show c
@@ -216,7 +342,7 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
         goM :: BMap -> [Box] -> [Box] -> Int -> [Char]
         goM visitedM [] allPz1MA c
             -- for testing each level and show map (current, parent) or just next puzzles
-            | c < 99999 = go visitedM allPz1MA c
+            | c < 9999 = go visitedM allPz1MA c
 --            -- show puzzles of allPz1MA with their parents
             | otherwise = "\n" ++ show (length pz_parentL) ++ "\n" ++ 
 --                    concatMap (\(p,pa) -> showPz p ++
@@ -230,7 +356,7 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
             createPPar :: Box -> (Box, Box)
             createPPar pz = (pz, parent) where
                 parent = snd $ visitedM M.! (reduceF blSAr pz)
-            lblk pz = fst $ pz A.! maxPBd
+            lblk pz = getBlkIP pz (maxBd + 1)
         goM visitedM (pz : pzsMR) allPz1MA c 
                 = goD visitedM geoBlkIL [pz] allPz1MA c
         -- Depth first search with each block, target last
@@ -254,13 +380,13 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
                     othersBox = foldr fldF 0 othPossShps_
                     fldF ((y,x), shape, _) box_ = box_ .|. (shape `shiftL` (y * n + x))
                     othPossShps_ = filter (\(_,_,idx) -> idx /= blk) $ zip3 posL blSL [0..]
-                    posL = A.elems box
-                    currBlkPos@(y,x) = box A.! blk
+                    posL = map (getBlkP box) [0 .. maxBd]
+                    currBlkPos@(y,x) = getBlkP box blk
                     currBlkAShape = currBlkRShape `shiftL` (y * n + x)
 --                    currBlkAShape = currBlkRShape * 2 ^ (y * n + x)
                     go [] = []
                     go dirs''
-                        | check = (box A.// [(blk,add currBlkPos dir')]) : go (tail dirs'')
+                        | check = (putBlP box (add currBlkPos dir') blk) : go (tail dirs'')
                         | otherwise = go (tail dirs'') where
                         (dir', dir) = head dirs''
                         check = newNotInOtherBlks && newNotOut
@@ -290,16 +416,17 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
                     qs = case q of
                         Just p' -> case () of
                             _ | p_ == parent_ -> ps'
-                            _ | otherwise -> (p' A.// [(maxPBd, (blk, 0))]) : ps'
-                            where--                add last block
-                            -- compare new / parent without last block
-                            parent_ = parent A.// [(maxPBd, (0,0))]
-                            p_ = p' A.// [(maxPBd, (0,0))]
+                            _ | otherwise -> (addLastBlock p') : ps'
+                            where
+                            -- parent without last block
+                            parent_ = delBlk parent (maxBd + 1)
+                            p_ = delBlk p' (maxBd + 1)
                         Nothing -> ps'
                     (visited', ps') = addPositionsF visited ps
                     (visited'', q) = addPositionF visited' (p'', parent)
                     -- last block in box p packen
-                    p'' = p A.// [(maxPBd, (blk, 0))]
+                    addLastBlock x = putBlIP x blk (maxBd + 1)
+                    p'' = addLastBlock p
 
                 -- Given the map of visited puzzles and the list
                 -- of current puzzles, return an updated map with all next moves
@@ -308,20 +435,18 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
                     addPositionsF visited (allMovesF parent curr_pzs)
         
     maxBd = snd (A.bounds blSAr)
-    maxPBd = snd (A.bounds start)
     blSL = A.elems blSAr
     blkIL = A.indices blSAr
     (m, n) = rlc  -- box dimensions
 
     v = m - 1; h = n - 1  --vMax, hMax
-    start_ = A.array (0, (snd $ A.bounds start) - 1) (init $ A.assocs start)
-    geoBlkIL = geoSorIdxL start_  -- start without last block
+    geoBlkIL = geoSorIdxL start
     --assumption: best to sort by size of block ascending and then 
     --sort them in shortest geometrical distance (sortBy position)
     geoSrt p = sortBy (\(_,(y1,x1)) (_,(y2,x2)) 
         -> compare ((v-y1)^2+(h-x1)^2) ((v-y2)^2+(h-x2)^2)) p
-    geoSorIdxL p = map (\(idx,(pos,posL)) -> idx) $ geoSrt (A.assocs p)
---    assocs_ x = zip [0..maxBd] (map (getBlkP x) [0..])
+    geoSorIdxL p = map (\(idx,(pos,posL)) -> idx) $ geoSrt (assocs_ p)
+    assocs_ x = zip [0..maxBd] (map (getBlkP x) [0..])
     winPz pzss = filter (isWinF goal) pzss
     -- map list of puzzles from start to winning puzzle
     getPathL :: BMap -> [Box] -> [Box]
@@ -333,9 +458,9 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
     -- create list of blocks and their single step moves by finding 
     -- the different blocks of neighboring puzzles of solution path
     
-    blkStepsL :: BMap -> [Box] -> [([Char], Coord, Coord)]
+    blkStepsL :: BMap -> [Box] -> [([Char], Coord', Coord')]
     blkStepsL vstd pzss = map blkMove blkLNeighborsL where
-        posAL = map A.assocs (getPathL vstd pzss)
+        posAL = map assocs_ (getPathL vstd pzss)
         blkLNeighborsL = zip posAL (tail posAL)
         blkMove (l1, l2) = head $ map cvtToBlkMvs $ filter diffItems $ zip l1 l2 where
             cvtToBlkMvs ((i, blkP), (i1, blkP1)) = ((blkL !! i), blkP, blkP1)
@@ -345,19 +470,19 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
         where
         len = length blkmvL
         str (x,y,z) = x ++ " " ++ show y ++ " " ++ show z
-    root = A.array (A.bounds start) [(blki,((-1::Int,0::Int))) | blki <- A.indices start]
---    root = 0
+--    root = A.array (A.bounds start) [(blki,((-1::Int,0::Int),[(0::Int,0::Int)])) | blki <- A.indices start]
+    root = 0
     showPz pz = (unlines $ map unwords $ map (map getBlkDgt) allPosL) ++ "\n"
         where
         allPosL = [[(y,x) | x <- [0..h]] |  y <- [0..v] ]
         blkIL = A.indices blSAr
         
-        posL :: BlkIdx -> [Coord]
+        posL :: BlkIdx -> [Coord']
         posL blkidx = shape2Coords' m n blkAShape where
             blkAShape = blkRShape `shiftL` (y * n + x)
-            (y,x) = pz A.! blkidx
+            (y,x) = getBlkP pz blkidx
             blkRShape = blSAr A.! blkidx
-        getBlkDgt :: Coord -> [Char]
+        getBlkDgt :: Coord' -> [Char]
         getBlkDgt pos
             | idxL == [] = map (const '.') (head blkL)
             | otherwise = blkL !! (snd $ head idxL)
@@ -385,9 +510,10 @@ main = do
         mBIdx = elemIndex targS blo
         bl = moveToHead targIdx blo
         pz = map words p
-        blM = createBlockMap bl pz
-        blAF@(blA_, blSA) = createBlockArrayF n bl pz
---        blA_lesbar = zip [0..length bl] (map (getBlkP blA_) [0..])
+        blMF = createBlockMapF m n bl pz
+        blMFlesbar = map (\(x,y) -> (x,(read (dec2bin y) :: Integer))) (M.toList $ createBlockMapF m n bl pz)
+        blAF@(blA_, blSA) = createBlockArrays m n bl pz
+        blA_lesbar = zip [0..length bl] (map (getBlkP blA_) [0..])
         isOneBlk (i, x) = (i, (length $ snd x) == 1)
         goal = (goalL !! 0, goalL !! 1)
     putStr $ findPuzzlesF (m, n) goal bl blAF
@@ -396,7 +522,11 @@ main = do
     putStrLn $ show pz ++ "  Target: " ++ show targS ++ " Goal: " ++ show goal ++ "  (0,0): " ++ show ((p !! 0) !! 0)
         ++ "  Blocks: " ++ show bl ++ "  Targetindex: " ++ show targIdx ++ " changed to 0"
     putStrLn $ "BlockMap: " ++ show blM
+    putStrLn $ "BlockMap neu: " ++ show blMF
+    putStrLn $ "BlockMap neu (lesbar): " ++ show blMFlesbar
+    putStrLn $ "Block Array: " ++ show blA
     putStrLn $ "Block Array neu: " ++ show blA_
+    putStrLn $ "Block Array neu (lesbar): " ++ show blA_lesbar
     putStrLn $ "Block Shape Array: " ++ show blSA
     putStrLn $ "reduced Block List: " ++ show (reduce blA)
     putStrLn $ show (allMoves1_ (m, n) blA)
@@ -439,7 +569,7 @@ B
 3 1
 (sollten 102 sein)  "B","A","C","D","E","F","G","H","I","J"
 2:18
-1:52 after optimizing reduce to just [Coord]
+1:52 after optimizing reduce to just [Coord']
 
 testcase 8:   5:32  ->  1:58 (eliminating p == parent in backstream, while mark as visited)
 5 4                           and optimize reduce to just sorted positions (blockshape then position)
