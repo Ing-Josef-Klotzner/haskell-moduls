@@ -126,8 +126,8 @@ search puz todoList visited n = case Seq.viewl todoList of
             -- skipping visited states
         _ | digestBox b `S.member` visited -> search puz bs visited n
             -- a solution is found
-        _ | fst targetBlock == targetCoord puz -> error $ "solution found in round: " ++ show n ++ "\nitems todoList: " ++ show (length $ toList todoList) ++ "\n" --(b,mvs) --
-        _ | n == 2 -> error $ "round " ++ show n ++ "\n" ++ show mvs ++ "\n" ++ show (map (\(_,m) -> m) (toList todoList))
+        _ | fst targetBlock == targetCoord puz -> (b,mvs)-- error $ "solution found in round: " ++ show n ++ "\nitems todoList: " ++ show (length $ toList todoList) ++ "\n" --(b,mvs)
+        _ | n == 99999 -> error $ "round " ++ show n ++ "\n" ++ show mvs ++ "\n" ++ show (map (\(_,m) -> m) (toList todoList))
             -- expand the current queue, and search next one in the queue
         _ -> search puz (bs Seq.>< nextMoves (pzM puz) (pzN puz) (b,mvs)) newVisited (n+1)
 

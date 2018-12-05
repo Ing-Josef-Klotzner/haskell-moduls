@@ -6,13 +6,14 @@ import qualified Data.Set as Set   -- (insert, member, empty)
 import qualified Data.Map as M
 import Control.Applicative
 import Control.Monad hiding (mapM_)
-import Data.Foldable
+import Data.Foldable (Foldable, foldr,concatMap,concat)
 import Control.Arrow
 import Data.Bits
 import Data.Int
 import qualified Data.Array as A
 import qualified Data.Maybe as Maybe
-import qualified ArrayExtensions as AE
+--import qualified ArrayExtensions as AE
+import Prelude hiding ( minimum, concat, notElem, concatMap, all, mapM_, foldr)
 
 -- 2 coordinate variables y and x are brought to 1 Int8
 -- upper 4 bits is y, lower 4 bits is x 
