@@ -366,7 +366,7 @@ findPuzzlesF rlc goal blkL (start, blSAr) =
 --                | any (isWinF goal) allPz1M = outAll vstd allPz1M
                 | otherwise = goM vstd pzsMR allPz1M (c + 1)
             goD vstd blkLD [] allPz1M c = goD vstd (tail blkLD) [pz] allPz1M c
-            goD vstd blkLD pzsD allPz1M c  = goD visitedD blkLD pzs'' (pzs'' ++ allPz1M) c
+            goD vstd blkLD pzsD allPz1M c  = goD visitedD blkLD pzs'' (allPz1M ++ pzs'') c
                 where
                 blk = head blkLD
                 (visitedD, pzs'') = newPositionsD pz vstd pzsD
