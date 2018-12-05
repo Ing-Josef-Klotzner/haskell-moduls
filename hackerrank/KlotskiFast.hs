@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+-- {-# LANGUAGE ViewPatterns #-}
 module Main where
-import Data.List (elemIndices, minimum, (\\), notElem, all, sort, repeat, elemIndex, sortBy)
+import Data.List ((\\), sort, repeat, sortBy, elemIndices, minimum, notElem, all, elemIndex)
+import qualified Data.Vector as V
 import qualified Data.Set as Set   -- (insert, member, empty)
 import qualified Data.Map as M
 import Control.Applicative
@@ -59,6 +61,33 @@ uniqFstTup xs = go Set.empty xs where
         | fx `Set.member` s = go s xs
         | otherwise = x : go (Set.insert fx s) xs
     go _ _ = []
+
+--pattern x ::: xs <- (uncons -> Just (x, xs))
+
+mergesort'merge :: (Ord a) => V.Vector a -> V.Vector a -> V.Vector a
+mergesort'merge v ys
+    | V.null v = ys
+mergesort'merge xs w
+    | V.null w = xs
+mergesort'merge x y
+    | (V.head x < V.head y) = (V.slice 0 1 x) V.++ mergesort'merge (V.slice 1 zx x) y
+    | otherwise = (V.slice 0 1 y) V.++ mergesort'merge x (V.slice 1 zy y) where
+    zx = V.length x - 1
+    zy = V.length y - 1
+ 
+mergesort'splitinhalf :: V.Vector a -> (V.Vector a, V.Vector a)
+mergesort'splitinhalf xs = (V.slice 0 n xs, V.slice n zxs xs) where
+        n = (V.length xs) `div` 2
+        zxs = V.length xs - n
+-- 
+mergesort :: (Ord a) => V.Vector a -> V.Vector a
+mergesort xs 
+    | (V.length xs) > 1 = mergesort'merge (mergesort ls) (mergesort rs)
+    | otherwise = xs where
+    (ls, rs) = mergesort'splitinhalf xs
+
+mergeSort :: Ord a => [a] -> [a]
+mergeSort xsL = V.toList $ mergesort (V.fromList xsL)
 
 -- get x lines
 getLn :: Int -> IO [String]
@@ -160,19 +189,6 @@ isWinF goal (box, _) = goal == box A.! 0
 dirs_ :: (Num t, Num t1, Num t2) => t -> [((t1, t2), t)]
 dirs_ n = [((0, -1),-1), ((0, 1),1), ((-1, 0),-1 * n), ((1, 0),n)]
 
--- 4-7 target y, 0-3 target x   -- leave it in box
--- 12-15 y blk1, 8-11 x blk1,... 
--- at (maxBd + 1) * 8: last moved block index -- leave it in box
--- sorted by block shapes and then their positions, only positions used
-reduceF :: BSArray -> Box -> BoxKey
-reduceF blSAr (box, _) = (box A.! maxBd) : (box A.! 0) : sortedPossL
-    where
-    blSAL = A.elems blSAr  -- shape element list
-    blSL = tail blSAL -- process without target
-    maxBd = snd (A.bounds box)
-    sortedPossL = map snd $ sort $ zip blSL posL0box
-    posL0box = tail $ A.elems box  -- posL0box without target
-
 -- test running funtion x times to see runtime
 goL :: (Eq a, Num a) => (a -> [t]) -> a -> [t]
 goL f x = go [] x where
@@ -187,7 +203,7 @@ goN f x = go 0 x where
 -- through all reachable puzzles from starting puzzle
 findPuzzlesF :: Coord -> Coord -> [[Char]] -> (Box, BSArray) -> [Char]
 findPuzzlesF rlc goal blkL (start_, blSAr) = 
-        go (M.singleton (reduceF blSAr start_) (start_, root_)) [start_] 0 where
+        go (M.singleton (reduceF start_) (start_, root_)) [start_] 0 where
     go _ [] c = "sorry, no solution found after cycles: " ++ show c
     go visited pzs c -- = goM visited pzs [] (c + 1) -- = goST visited pzs []
         | any (isWinF goal) pzs = out visited pzs
@@ -215,7 +231,7 @@ findPuzzlesF rlc goal blkL (start_, blSAr) =
 --            createPPar (blk, pz) = (pz, parent blk pz) where
             createPPar :: Box -> (Box, Box)
             createPPar pz = (pz, parent) where
-                parent = snd $ visitedM M.! (reduceF blSAr pz)
+                parent = snd $ visitedM M.! (reduceF pz)
             lblk (pz,_) = fst $ pz A.! maxPBd
         goM visitedM (pz : pzsMR) allPz1MA c 
                 = goD visitedM geoBlkIL [pz] allPz1MA c
@@ -264,9 +280,9 @@ findPuzzlesF rlc goal blkL (start_, blSAr) =
                 addPositionF :: BMap -> (Box, Box) -> (BMap, Maybe Box)
                 addPositionF visited (p, parent) = (visited', q)
                     where 
-                    old_p_parent = M.lookup (reduceF blSAr p) visited
+                    old_p_parent = M.lookup (reduceF p) visited
                     (visited', q) = case old_p_parent of
-                        Nothing -> (M.insert (reduceF blSAr p) (p, parent) visited, Just p)
+                        Nothing -> (M.insert (reduceF p) (p, parent) visited, Just p)
                         Just _ -> (visited, Nothing)
                 addPositionsF :: BMap -> [(Box, Box)] -> (BMap, [Box])
                 addPositionsF visited [] = (visited, [])
@@ -292,10 +308,18 @@ findPuzzlesF rlc goal blkL (start_, blSAr) =
                 newPositionsD parent visited curr_pzs = 
                     addPositionsF visited (allMovesF parent curr_pzs)
         
+    -- sorted by block shapes and then their positions, only positions used
+    reduceF :: Box -> BoxKey
+    reduceF (box, _) = (box A.! maxPBd) : (box A.! 0) : sortedPossL
+        where
+        sortedPossL = map snd $ sort $ zip blSl posL0box
+        posL0box = tail $ A.elems box  -- posL0box without target
+
     maxBd = snd (A.bounds blSAr)
     maxPBd = snd (A.bounds start)
     start = fst start_
     blSL = A.elems blSAr
+    blSl = tail blSL
     blkIL = A.indices blSAr
     -- current block blanked block list array - faster (vs filter)
     cBbblSLArr = A.array (0, 35) [(blk, (A.elems (blSAr A.// [(blk,0)]))) | blk <- [0..35]]
@@ -317,7 +341,7 @@ findPuzzlesF rlc goal blkL (start_, blSAr) =
         go pathL
             | parent == root = pathL 
             | otherwise = go (parent : pathL) where
-            (_, (parent,_)) = vstd M.! (reduceF blSAr ((head pathL),0))
+            (_, (parent,_)) = vstd M.! (reduceF ((head pathL),0))
     -- create list of blocks and their single step moves by finding 
     -- the different blocks of neighboring puzzles of solution path
     
