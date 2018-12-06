@@ -105,12 +105,20 @@ bubblesort' (xs,sorted) i
 bubblesort :: (Ord a) => [a] -> [a]
 bubblesort xs = bubblesort' (xs, False) 0
 
--- 111 s
-qsort []	= []
-qsort (x:xs) = qsort small ++ mid ++ qsort large
+-- 112 s
+qsort_ []	= []
+qsort_ (x:xs) = qsort_ small ++ mid ++ qsort_ large
     where
     small = [y | y<-xs, y<x]
     mid   = [y | y<-xs, y==x] ++ [x]
+    large = [y | y<-xs, y>x]
+
+-- 113 s
+qsort []	= []
+qsort l@(x:xs) = qsort small ++ mid ++ qsort large
+    where
+    small = [y | y<-xs, y<x]
+    mid   = [y | y<-l, y==x]
     large = [y | y<-xs, y>x]
 
 -- 104 s
@@ -118,7 +126,7 @@ quicksort :: (Ord a) => [a] -> [a]
 quicksort [] = []
 quicksort (x:xs) = quicksort [y | y <- xs, y <= x] ++ [x] ++ quicksort [y | y <- xs, y > x]
 
--- 93,5 s
+-- 93,5 s, but compiled a bit faster than standard sort
 insertSort :: (Ord a) => [a] -> [a]
 insertSort [] = []
 insertSort (firEle:arrLeft) = insert firEle (insertSort arrLeft)
