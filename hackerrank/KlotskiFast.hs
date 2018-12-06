@@ -62,8 +62,7 @@ uniqFstTup xs = go Set.empty xs where
         | otherwise = x : go (Set.insert fx s) xs
     go _ _ = []
 
---pattern x ::: xs <- (uncons -> Just (x, xs))
-
+-- 152 s  -- with fromList / toList
 mergesort'merge :: (Ord a) => V.Vector a -> V.Vector a -> V.Vector a
 mergesort'merge v ys
     | V.null v = ys
@@ -77,8 +76,9 @@ mergesort'merge x y
  
 mergesort'splitinhalf :: V.Vector a -> (V.Vector a, V.Vector a)
 mergesort'splitinhalf xs = (V.slice 0 n xs, V.slice n zxs xs) where
-        n = (V.length xs) `div` 2
-        zxs = V.length xs - n
+        n = len `div` 2
+        zxs = len - n
+        len = V.length xs
 -- 
 mergesort :: (Ord a) => V.Vector a -> V.Vector a
 mergesort xs 
@@ -88,6 +88,44 @@ mergesort xs
 
 mergeSort :: Ord a => [a] -> [a]
 mergeSort xsL = V.toList $ mergesort (V.fromList xsL)
+
+-- 121 s
+bubblesort'iter :: Ord a => [a] -> [a] -> Bool -> ([a], Bool)
+bubblesort'iter (x:y:xs) sortedL sorted
+    | x > y = bubblesort'iter (x:xs) (sortedL ++ [y]) False
+    | otherwise = bubblesort'iter (y:xs) (sortedL ++ [x]) sorted
+bubblesort'iter x sortedL sorted = ((sortedL ++ x), sorted)
+
+bubblesort' :: Ord a => ([a], Bool) -> Int -> [a]
+bubblesort' (xs,sorted) i 
+    | sorted == True = xs -- error ("list is sorted " ++ show xs ++ " " ++ show i)
+    | i == length xs = xs
+    | otherwise = bubblesort' (bubblesort'iter xs [] True) (i + 1) where
+ 
+bubblesort :: (Ord a) => [a] -> [a]
+bubblesort xs = bubblesort' (xs, False) 0
+
+-- 111 s
+qsort []	= []
+qsort (x:xs) = qsort small ++ mid ++ qsort large
+    where
+    small = [y | y<-xs, y<x]
+    mid   = [y | y<-xs, y==x] ++ [x]
+    large = [y | y<-xs, y>x]
+
+-- 104 s
+quicksort :: (Ord a) => [a] -> [a]
+quicksort [] = []
+quicksort (x:xs) = quicksort [y | y <- xs, y <= x] ++ [x] ++ quicksort [y | y <- xs, y > x]
+
+-- 93,5 s
+insertSort :: (Ord a) => [a] -> [a]
+insertSort [] = []
+insertSort (firEle:arrLeft) = insert firEle (insertSort arrLeft)
+    where insert a [] = [a]
+          insert a (b:c)
+            | a < b = a : b : c
+            | otherwise = b : insert a c
 
 -- get x lines
 getLn :: Int -> IO [String]
