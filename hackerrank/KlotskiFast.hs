@@ -3,7 +3,7 @@
 -- {-# LANGUAGE ViewPatterns #-}
 module Main where
 import Data.List ((\\), sort, repeat, sortBy, elemIndices, minimum, notElem, all, elemIndex)
-import qualified Data.Vector as V
+-- import qualified Data.Vector as V
 import qualified Data.Set as Set   -- (insert, member, empty)
 import qualified Data.Map as M
 import Control.Applicative
@@ -62,32 +62,32 @@ uniqFstTup xs = go Set.empty xs where
         | otherwise = x : go (Set.insert fx s) xs
     go _ _ = []
 
--- 152 s  -- with fromList / toList
-mergesort'merge :: (Ord a) => V.Vector a -> V.Vector a -> V.Vector a
-mergesort'merge v ys
-    | V.null v = ys
-mergesort'merge xs w
-    | V.null w = xs
-mergesort'merge x y
-    | (V.head x < V.head y) = (V.slice 0 1 x) V.++ mergesort'merge (V.slice 1 zx x) y
-    | otherwise = (V.slice 0 1 y) V.++ mergesort'merge x (V.slice 1 zy y) where
-    zx = V.length x - 1
-    zy = V.length y - 1
- 
-mergesort'splitinhalf :: V.Vector a -> (V.Vector a, V.Vector a)
-mergesort'splitinhalf xs = (V.slice 0 n xs, V.slice n zxs xs) where
-        n = len `div` 2
-        zxs = len - n
-        len = V.length xs
+---- 152 s  -- with fromList / toList
+--mergesort'merge :: (Ord a) => V.Vector a -> V.Vector a -> V.Vector a
+--mergesort'merge v ys
+--    | V.null v = ys
+--mergesort'merge xs w
+--    | V.null w = xs
+--mergesort'merge x y
+--    | (V.head x < V.head y) = (V.slice 0 1 x) V.++ mergesort'merge (V.slice 1 zx x) y
+--    | otherwise = (V.slice 0 1 y) V.++ mergesort'merge x (V.slice 1 zy y) where
+--    zx = V.length x - 1
+--    zy = V.length y - 1
 -- 
-mergesort :: (Ord a) => V.Vector a -> V.Vector a
-mergesort xs 
-    | (V.length xs) > 1 = mergesort'merge (mergesort ls) (mergesort rs)
-    | otherwise = xs where
-    (ls, rs) = mergesort'splitinhalf xs
+--mergesort'splitinhalf :: V.Vector a -> (V.Vector a, V.Vector a)
+--mergesort'splitinhalf xs = (V.slice 0 n xs, V.slice n zxs xs) where
+--        n = len `div` 2
+--        zxs = len - n
+--        len = V.length xs
+---- 
+--mergesort :: (Ord a) => V.Vector a -> V.Vector a
+--mergesort xs 
+--    | (V.length xs) > 1 = mergesort'merge (mergesort ls) (mergesort rs)
+--    | otherwise = xs where
+--    (ls, rs) = mergesort'splitinhalf xs
 
-mergeSort :: Ord a => [a] -> [a]
-mergeSort xsL = V.toList $ mergesort (V.fromList xsL)
+--mergeSort :: Ord a => [a] -> [a]
+--mergeSort xsL = V.toList $ mergesort (V.fromList xsL)
 
 -- 121 s
 bubblesort'iter :: Ord a => [a] -> [a] -> Bool -> ([a], Bool)
