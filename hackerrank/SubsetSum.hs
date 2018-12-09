@@ -1,9 +1,19 @@
 module Main where
 import Data.List (sortBy, sort)
-import Control.Monad (forM_)
--- import Data.Vector (Vector)
-import qualified Data.Array as A
+import Control.Monad (forM)
+--import Data.Vector (Vector)
 --import qualified Data.Vector as V
+import qualified Data.Array as A
+import qualified Data.Set as Set
+type IntArr = A.Array Int Int
+type TstArr = A.Array Int Int
+
+unique :: (Ord a) => [a] -> [a]
+unique xs = go Set.empty xs where
+    go s (x:xs)
+        | x `Set.member` s = go s xs
+        | otherwise        = x : go (Set.insert x s) xs
+    go _ _                 = []
 
 -- get x lines
 rdLn :: Int -> IO [Int]
@@ -13,47 +23,64 @@ rdLn x = do
     cs <- rdLn (x - 1)
     return ([cu] ++ cs)
 
-findMinSet :: (Num b, Ord b) => t -> [b] -> Int -> [b] -> IO ()
-findMinSet n intL t tstL = forM_ [0..t-1] (\t_ -> do out (l t_))
+findMinSet :: Int -> [Int] -> Int -> [Int] -> [Int]
+findMinSet n intL t tstL = findMinSet_ n funArr t tstA srtOrd
     where
-    out x = putStrLn $ (if x == [] then "-1" else getLen x)
-    getLen x = show $ length $ fst $ head x
-    l x = resL $ tstL !! x
-    resL tx = sortBy srtByF $ filter filF $ map mapF $ fun_
+    tstA = A.array (0,t - 1) (zip [0..t - 1] (srtdTstL))
+    -- sort tstL - remember sort order - on end sort back to orig. order
+    (srtdTstL, srtOrd) = unzip $ sortBy srt (zip tstL [0..]) where
+        srt (t,n) (t1,n1) = compare t t1
+    funArr :: IntArr
+    funArr = go 1 arr seqInOrd where
+        go i arrm [] = arrm
+        go i arrm seq = go (i + 1) newArr (tail seq)
+            where
+            newArr = arrm A.// [(i, newVal)]
+            newVal = arrm A.! (i - 1) + (head seq)
+        seqInOrd = sortBy sortGT intL  -- sort in reverse (descending)
+        arr = A.array (0,n) [(i,0) | i <- [0..n]]
+        sortGT a b
+          | a < b = GT
+          | a > b = LT
+          | a == b = EQ
+
+findMinSet_ :: Int -> IntArr -> Int -> TstArr -> [Int] -> [Int]
+findMinSet_ n intA t tstA srtOrd = go 0 1 [] where
+    go ti ptr resL
+        | ti == t = bkSrtRslt
+        | otherwise = go (ti + 1) ptrR (resL ++ [res]) 
         where
-        srtByF (x, sum) (x1, sum1) = compare (length x) (length x1)
-        filF (x, sum) = sum >= tx
-        mapF x = (x, sum x)
-        fun_ = go 1 [] where
-            go i funL
-                | length intL == i = funL
-                | otherwise = go (i + 1) (take i seqInOrd : funL)
-        seqInOrd = reverse $ sort intL
-
-fun l = go 1 [] where
-    go i funL
-        | length l == i = funL
-        | otherwise = go (i + 1) (take i seqInOrd : funL)
-    seqInOrd = reverse $ sort l
-
-fun1 l = go 1 [] where
-    go i funL
-        | length l == i = funL
-        | otherwise = go (i + 1) (take i seqInOrd : funL)
-    seqInOrd = reverse $ sort l
-
--- intLV = V.fromList [4,5,7,8,33,11,12,21,25]
-intLi = [4,5,7,8,33,11,12,21,25]
+        (res, ptrR) = find ti ptr
+        (bkSrtRslt, _) = unzip $ sortBy srt (zip resL srtOrd)
+        srt (t,n) (t1,n1) = compare n n1
+    find :: Int -> Int -> (Int, Int)
+    find ti ptr = go ptr ptr lmt where
+        lmt = snd $ A.bounds intA
+        go li i lu    -- li lower limit, lu upper limit
+            | tstA A.! ti > intA A.! i && i == lmt = ((-1), i)
+            | i == lu = (i, i)
+            | tstA A.! ti <= intA A.! i = go li divD i
+            | tstA A.! ti > intA A.! i = go i divU lu
+            | otherwise = (i, i)
+--            | tstA A.! ti <= intA A.! i = (i, i)
+--            | otherwise = go (i + 1)
+            where
+            divD = div (li + i + mod') 2
+            mod' = mod (li + i) 2
+            divU = div (i + lu + mod_) 2
+            mod_ = mod (i + lu) 2
 
 main :: IO ()
 main = do
     n <- readLn :: IO (Int)-- size of int list
     intL <- fmap (map (read :: String -> Int).words) getLine
     t <- readLn   -- number of testcases
-    tstL <- rdLn t
+--    tstL <- rdLn t
+    tstL_ <- getContents
+    let tstL = map read $ lines tstL_
 --    putStrLn $ "size of int list: " ++ show n ++ " int list: " ++ show intL 
 --        ++ "\ncount of test cases:" ++ show t ++ " test case list: " ++ show tstL
-    findMinSet n intL t tstL
+    putStr $ unlines $ map show $ findMinSet n intL t tstL
 
 {-
 4
