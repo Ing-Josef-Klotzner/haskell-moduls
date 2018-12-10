@@ -1,86 +1,108 @@
 module Main where
-import Data.List (sortBy, sort)
-import Control.Monad (forM)
---import Data.Vector (Vector)
---import qualified Data.Vector as V
-import qualified Data.Array as A
+--import qualified Data.Text.IO as T
+--import qualified Data.Text as T
+import qualified Data.ByteString.Char8 as T
+import Data.List (sortBy, sort, replicate)
+import Control.Monad (forM_)
+import Data.Vector.Unboxed (Vector, freeze)
+import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector.Unboxed.Mutable as M
 import qualified Data.Set as Set
-type IntArr = A.Array Int Int
-type TstArr = A.Array Int Int
-
-unique :: (Ord a) => [a] -> [a]
-unique xs = go Set.empty xs where
-    go s (x:xs)
-        | x `Set.member` s = go s xs
-        | otherwise        = x : go (Set.insert x s) xs
-    go _ _                 = []
+type IntV = Vector Int
+type TstV = Vector Int
 
 -- get x lines
 rdLn :: Int -> IO [Int]
 rdLn 0 = return []
 rdLn x = do
-    cu <- readLn
+    cu_ <- T.getLine
+    let cu = read $ T.unpack cu_
     cs <- rdLn (x - 1)
     return ([cu] ++ cs)
 
-findMinSet :: Int -> [Int] -> Int -> [Int] -> [Int]
-findMinSet n intL t tstL = findMinSet_ n funArr t tstA srtOrd
-    where
-    tstA = A.array (0,t - 1) (zip [0..t - 1] (srtdTstL))
-    -- sort tstL - remember sort order - on end sort back to orig. order
-    (srtdTstL, srtOrd) = unzip $ sortBy srt (zip tstL [0..]) where
+main :: IO ()
+main = do
+--    n_ <- T.getLine -- size of int list
+--    let n = read $ T.unpack n_
+--    cIL <- T.getLine
+--    let intL = map (read . T.unpack) $ T.words cIL
+----    let intL = replicate 100000 (1000000000 :: Int)
+--    t_ <- T.getLine   -- number of testcases
+--    let t = read $ T.unpack t_
+--    tstL <- rdLn t
+
+    all_ <- T.getContents
+    let lines_ = T.lines all_
+        n = read $ T.unpack $ head lines_
+        rest = tail lines_
+        intL = map (read . T.unpack) $ T.words (head rest)
+        rest1 = tail rest
+        t = read $ T.unpack $ head rest1
+        tstL_ = tail rest1
+
+--    tstL_ <- T.getContents
+    let tstL = map (read . T.unpack) $ tstL_
+
+--    putStrLn $ "size of int list: " ++ show n ++ " int list: " ++ show intL 
+--        ++ "\ncount of test cases:" ++ show t ++ " test case list: " ++ show tstL
+    let tstV = V.fromList srtdTstL  -- tstL
+        -- sort tstL - remember sort order - on end sort back to orig. order
+        (srtdTstL, srtOrd) = unzip $ sortBy srt (zip tstL [0..])
         srt (t,n) (t1,n1) = compare t t1
-    funArr :: IntArr
-    funArr = go 1 arr seqInOrd where
-        go i arrm [] = arrm
-        go i arrm seq = go (i + 1) newArr (tail seq)
-            where
-            newArr = arrm A.// [(i, newVal)]
-            newVal = arrm A.! (i - 1) + (head seq)
-        seqInOrd = sortBy sortGT intL  -- sort in reverse (descending)
-        arr = A.array (0,n) [(i,0) | i <- [0..n]]
-        sortGT a b
+        seqInOrd :: [Int]
+        seqInOrd = sortBy desc intL -- sort in reverse (descending)
+        desc a b
           | a < b = GT
           | a > b = LT
           | a == b = EQ
+        -- add helper item for summing
+        seqInOrdV = V.fromList (0 : seqInOrd)
+    --convert to mutable vector
+    intMV <- V.unsafeThaw seqInOrdV
+    -- create sums of current and previous value of descending sorted int list
+    forM_ [0 .. n - 1] (\i -> do 
+        oldSum <- M.read intMV i
+        value <- M.read intMV (i + 1)
+        M.write intMV (i + 1) (oldSum + value)
+        )
+    -- intMV now holding sums list
+    -- convert to unmutable vector
+    intV <- freeze intMV
+--    error ("got data")
+--    error (show $ V.length tstV)
+    let find :: Int -> Int -> (Int, Int)
+        find ti ptr = go ptr ptr lmt where   -- go ptr ptr lmt  -- go 1 1 lmt
+            lmt = V.length intV - 1
+            go li i lu    -- li lower limit, lu upper limit
+                | tstV V.! ti > intV V.! i && i == lmt = ((-1), i)
+                | i == lu = (i, i)
+                | tstV V.! ti <= intV V.! i = go li divD i
+                | tstV V.! ti > intV V.! i = go i divU lu
+                | otherwise = (i, i)
+                where
+                divD = div (li + i + mod') 2
+                mod' = mod (li + i) 2
+                divU = div (i + lu + mod_) 2
+                mod_ = mod (i + lu) 2
 
-findMinSet_ :: Int -> IntArr -> Int -> TstArr -> [Int] -> [Int]
-findMinSet_ n intA t tstA srtOrd = go 0 1 [] where
-    go ti ptr resL
-        | ti == t = bkSrtRslt
-        | otherwise = go (ti + 1) ptrR (resL ++ [res]) 
-        where
-        (res, ptrR) = find ti ptr
-        (bkSrtRslt, _) = unzip $ sortBy srt (zip resL srtOrd)
-        srt (t,n) (t1,n1) = compare n n1
-    find :: Int -> Int -> (Int, Int)
-    find ti ptr = go ptr ptr lmt where
-        lmt = snd $ A.bounds intA
-        go li i lu    -- li lower limit, lu upper limit
-            | tstA A.! ti > intA A.! i && i == lmt = ((-1), i)
-            | i == lu = (i, i)
-            | tstA A.! ti <= intA A.! i = go li divD i
-            | tstA A.! ti > intA A.! i = go i divU lu
-            | otherwise = (i, i)
---            | tstA A.! ti <= intA A.! i = (i, i)
---            | otherwise = go (i + 1)
-            where
-            divD = div (li + i + mod') 2
-            mod' = mod (li + i) 2
-            divU = div (i + lu + mod_) 2
-            mod_ = mod (i + lu) 2
-
-main :: IO ()
-main = do
-    n <- readLn :: IO (Int)-- size of int list
-    intL <- fmap (map (read :: String -> Int).words) getLine
-    t <- readLn   -- number of testcases
---    tstL <- rdLn t
-    tstL_ <- getContents
-    let tstL = map read $ lines tstL_
---    putStrLn $ "size of int list: " ++ show n ++ " int list: " ++ show intL 
---        ++ "\ncount of test cases:" ++ show t ++ " test case list: " ++ show tstL
-    putStr $ unlines $ map show $ findMinSet n intL t tstL
+    -- create mutable vector for result
+    resMV <- M.replicate (t + 1) (0 :: Int, 1 :: Int)
+    forM_ [1 .. t] (\i -> do
+        prev <- M.read resMV (i - 1)
+        M.write resMV i (find (i - 1) (snd $ prev))
+        )
+    -- convert to unmutable vector
+    resV_ <- freeze resMV
+    -- eliminate first helper item
+    let resV = V.tail resV_
+    -- convert back to list
+        resLp = V.toList resV
+    -- get rid of pointers
+        resL = map (\(x,p) -> x) resLp
+        (bkSrtRslt, _) = unzip $ sortBy srtbk (zip resL srtOrd)
+        srtbk (t,n) (t1,n1) = compare n n1
+    --  sort back to original order in calling bkSrtRslt
+    putStr $ unlines $ map show $ bkSrtRslt
 
 {-
 4
