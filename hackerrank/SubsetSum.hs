@@ -1,6 +1,4 @@
 module Main where
---import qualified Data.Text.IO as T
---import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as T
 import Data.List (sortBy, sort, replicate)
 import Control.Monad (forM_)
@@ -39,13 +37,9 @@ main = do
         rest1 = tail rest
         t = read $ T.unpack $ head rest1
         tstL_ = tail rest1
+        tstL = map (read . T.unpack) $ tstL_
 
---    tstL_ <- T.getContents
-    let tstL = map (read . T.unpack) $ tstL_
-
---    putStrLn $ "size of int list: " ++ show n ++ " int list: " ++ show intL 
---        ++ "\ncount of test cases:" ++ show t ++ " test case list: " ++ show tstL
-    let tstV = V.fromList srtdTstL  -- tstL
+        tstV = V.fromList srtdTstL  -- tstL
         -- sort tstL - remember sort order - on end sort back to orig. order
         (srtdTstL, srtOrd) = unzip $ sortBy srt (zip tstL [0..])
         srt (t,n) (t1,n1) = compare t t1
