@@ -77,9 +77,8 @@ rule l vars rules
     | isRel =               -- relational term
         let newRules = M.insert nmFlt elmts rules
             nmFlt = filBeg name
-            elmts = V.map init elmts_
-            elmts_ = filEnd $ V.tail l
-            filEnd = V.filter (all (/= ']')) 
+            elmts = filEnd $ V.tail l
+            filEnd = V.map (filter (\c -> c /= ',' && c /= ']' && c /= '.')) 
             filBeg = filter (/= '[')
         in (vars, newRules)
     | otherwise = (M.singleton "shit" (V.fromList ["what","the","fuck"]), M.empty) where
