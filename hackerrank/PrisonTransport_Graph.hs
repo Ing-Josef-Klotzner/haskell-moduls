@@ -1,4 +1,6 @@
 module Main where
+import Data.Tree (flatten)
+import qualified Data.Graph as G
 import Control.Monad (liftM, replicateM)
 import qualified Data.Vector as V
 import qualified Data.Map as M
@@ -8,6 +10,21 @@ type Group = V.Vector (V.Vector Int)
 readLst :: IO [Int]
 readLst = liftM (map read . words) getLine
 
+-- x ... prisoner count   gCost ... costs per bus
+gCost :: Int -> Int
+gCost x = (fromEnum sqrtX) + roundUp
+    where
+    sqrtX = sqrt (toEnum x)
+    isInt = sqrtX - (toEnum $ fromEnum sqrtX) == 0
+    roundUp
+        | isInt = 0
+        | True = 1
+
+groupCosts :: G.Graph -> [Int]
+groupCosts g = map (gCost . length . flatten) $ G.components g
+
+-- map T.flatten (Data.Graph.components (Data.Graph.buildG (1,6) [(1,2),(3,4),(5,6),(3,5)]))
+--[[1,2],[3,4,5,6]]
 main :: IO ()
 main = do
     -- m ... count of prisoners
@@ -25,9 +42,13 @@ main = do
     --    if no prisoner of pair is in group, create new group and add both of pair to group
     --      and add both to search map to find with prisoner to which group it belongs
     --  remaining prisoners (in no group) are cost 1 for each
-    let costs = go listL (M.empty :: SMap) g0 0 where
-            g0 = V.singleton V.empty :: Group
---            go :: [[Int]] -> SMap -> Group -> Int -> Int
+    let listTl = map toTup listL
+        toTup [x, y] = (x, y)
+        prisoners = G.buildG (1, m) listTl
+        sum_ = sum $ groupCosts prisoners
+
+        costs = go listL (M.empty :: SMap) (V.empty :: Group) 0 where
+            go :: [[Int]] -> SMap -> Group -> Int -> Int
             go [] smap grp grpNr = cost
                 where
                 cost = V.sum grpCost + (m - M.size smap)
@@ -55,9 +76,7 @@ main = do
                 mergedGrpD = mergedGrp V.// [(p2Grp, V.empty)]
                 [p1,p2] = head pList
                 insP1_p2 = M.insert p2 grpNr (M.insert p1 grpNr smap)
-                p1_p2ToGrp
-                    | grp == g0 = V.singleton (V.fromList [p1, p2])
-                    | True = V.snoc grp (V.fromList [p1, p2])
+                p1_p2ToGrp = V.snoc grp (V.fromList [p1, p2])
                 xToGrp x gp = grp V.// [(gp, V.snoc (grp V.! gp) x)]
                 mBp1 = M.lookup p1 smap
                 mBp2 = M.lookup p2 smap
@@ -73,7 +92,10 @@ main = do
                 p2Grp = case mBp2 of
                     Nothing -> 0
                     Just gp2 -> gp2
-    print costs
+-- version with costs too slow (testcase 9 processes 10 min! and uses 5 GB !)
+--    print costs
+    print sum_
+
 {-
 16
 8
