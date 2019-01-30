@@ -1,7 +1,8 @@
 module Main where
 import Data.Tree (flatten)
 import qualified Data.Graph as G
-import Control.Monad (liftM, replicateM)
+import Control.Monad (liftM, forM_, replicateM)
+import qualified Data.Vector.Mutable as MV
 import qualified Data.Vector as V
 import qualified Data.Map as M
 type SMap = M.Map Int Int 
@@ -32,11 +33,6 @@ main = do
     -- n ... count of prisoner pairs
     n <- readLn :: IO (Int)
     listL <- replicateM n readLst
-    let listTl = map toTup listL
-        toTup [x, y] = (x, y)
-        prisoners = G.buildG (1, m) listTl
-        costs_ = sum $ groupCosts prisoners
-
     -- check if prisoner is in any group - via search map
     --    if none in a group create new group and add them, add them also to search map
     --    if both in same group, do nothing
@@ -47,6 +43,66 @@ main = do
     --    if no prisoner of pair is in group, create new group and add both of pair to group
     --      and add both to search map to find with prisoner to which group it belongs
     --  remaining prisoners (in no group) are cost 1 for each
+    let listV = V.fromList listL
+        grpV = V.fromList $ [[x] | x <- [0 .. m]] :: V.Vector [Int]
+    -- search vector for finding group
+    sMV <- V.unsafeThaw $ V.fromList [0 .. m]
+    grpMV <- V.unsafeThaw grpV
+    MV.write grpMV 0 []  -- ... 0 is no member 
+    forM_ [0 .. n - 1] $ (\x -> do
+        let [p1, p2] = listV V.! x
+--        print (p1, p2)
+        -- points to group - points to list with itself (length == 1) or to linked group
+        p1G <- MV.read sMV p1
+        p2G <- MV.read sMV p2
+        -- group lists
+        p1GL <- MV.read grpMV p1G
+        p2GL <- MV.read grpMV p2G
+        
+        case () of
+            _
+                -- both not linked -> link p2 in same group as p1
+                | [p1G] == p1GL && [p2G] == p2GL -> do
+                    MV.write sMV p2 p1G
+                    MV.write grpMV p1G [p1, p2]
+                    MV.write grpMV p2G []
+                -- both linked and in same group -> nothing to do
+                | [p1G] /= p1GL && [p2G] /= p2GL && p1G == p2G -> return ()
+                -- p1 linked and p2 linked, different groups -> merge groups to p1G
+                | [p1G] /= p1GL && [p2G] /= p2GL -> do
+                    forM_ p2GL $ (\x -> MV.write sMV x p1G)
+                    MV.write grpMV p1G (p1GL ++ p2GL)
+                    MV.write grpMV p2G []
+--                    putStrLn $ "merged p2 to p1G " ++ show (p1GL ++ p2GL) ++ " p1 " ++ show p1
+--                        ++ " p2 " ++ show p2 ++ " p1G " ++ show p1G ++ " p2G " ++ show p2G
+--                        ++ " p1GL " ++ show p1GL ++ " p2GL " ++ show p2GL
+                -- just p1 is linked -> link p2 to p1G
+                | [p1G] /= p1GL -> do
+                    MV.write sMV p2 p1G
+                    MV.write grpMV p1G (p1GL ++ [p2])
+                    MV.write grpMV p2G []
+                -- just p2 is linked -> link p1 to p2G
+                | [p2G] /= p2GL -> do
+                    MV.write sMV p1 p2G
+                    MV.write grpMV p2G (p2GL ++ [p1])
+                    MV.write grpMV p1G []                    
+        )
+    grpVRes <- V.freeze grpMV
+    let costs' = V.sum $ V.map (gCost' . length) grpVRes  
+        gCost' :: Int -> Int
+        gCost' x = (fromEnum sqrtX) + roundUp
+            where
+            sqrtX = sqrt (toEnum x)
+            isInt = sqrtX - (toEnum $ fromEnum sqrtX) == 0
+            roundUp
+                | isInt = 0
+                | True = 1
+        
+        listTl = map toTup listL
+        toTup [x, y] = (x, y)
+        prisoners = G.buildG (1, m) listTl
+        costs_ = sum $ groupCosts prisoners
+
         costs = go listL (M.empty :: SMap) (V.empty :: Group) 0 where
             go :: [[Int]] -> SMap -> Group -> Int -> Int
             go [] smap grp grpNr = cost
@@ -94,7 +150,8 @@ main = do
                     Just gp2 -> gp2
 -- version with costs too slow (testcase 9 processes 10 min! and uses 5 GB !)
 --    print costs
-    print costs_
+--    print costs_
+    print costs'
 
 {-
 16
