@@ -35,40 +35,50 @@ kadane inputV = go 0 sm1 sm1 0 0 1 where
         simON = if newMax then sim else simOld
         simN = if newStart then si + 1 else sim
         lgmN = if newMax then si - simON + 1 else lgm
-        newStart = mehN < 0
-        newMax = smN /= sm
         currNr = inputV V.! si
+        newStart = mehN < 0
+        newMax = smN > sm
         smN = max sm mehN
         mehN = max currNr (meh + currNr)
         len = V.length inputV
 -- faster in total - create a reverse sorted list of maxima during kadane search - O (n * log n)
 kadaneL :: V.Vector Int -> Int -> [Int]
-kadaneL inputV k = go sm1 sm1 1 V.empty where
+kadaneL inputV k = go 0 sm1 sm1 0 0 1 V.empty where
     sm1 = inputV V.! 0
-    go sm meh si kadL
+    go simOld sm meh sim lgm si kadL
         | si == len = take k $ reverse $ sort $ V.toList kadLl
-        | True = go smN mehNN (si + 1) kadLN
+        | True = go simON smN mehNN simN lgmN (si + 1) kadLN
         where
         kadLl = if sm > 0 then V.snoc kadL sm else kadL
-        kadLN = if newStart && sm > 0 then V.snoc kadL sm else kadL
+        kadLN = if newSubStart then V.snoc kadL sm else kadL
+        simON = if newMax then sim else simOld
+        simN = if newStart then si + 1 else sim
+        lgmN = if newMax then si - simON + 1 else lgmN
+        newSubStart = newStart && sm > 0
+        newMax = smN > sm
         -- max until next newStartg (mehN < 0) - is there a bigger number behind?
         -- done with a sub kadane search
-        maxNnewStart = gog 0 meh (si - 0)
+        maxNnewStart = gog 0 0 meh 0 0 si
             where
-            gog smg mehg sig
-                | sig == len || newStartg = smg -- error (show smg ++ " " ++ show sig) --smg
-                | True = gog smgN mehgN (sig + 1)
+            gog simgOld smg mehg simg lgmg sig
+                | sig == len || newStartg = (smg, lgmg)
+                | True = gog simgON smgN mehgN simgN lgmgN (sig + 1)
                 where
+                simgON = if newMaxg then simg else simgOld
+                simgN = if newStartg then sig + 1 else simg
+                lgmgN = if newMaxg then sig - simgON + 1 else lgmg
                 currNrg = inputV V.! sig
                 newStartg = mehgN < 0
+                newMaxg = smgN > smg
                 smgN = max smg mehgN
                 mehgN = max currNrg (mehg + currNrg)
         newStart = mehN < 0 || newDsjnt
-        newDsjnt = if mehN < meh && mehN > 0 then meh >= maxNnewStart else False
---        newMax = smN > sm
+        newDsjnt = if mehN < meh && mehN > 0 then isNewDsjnt else False
+        (maxNext, lgmgNext) = maxNnewStart
+        isNewDsjnt = meh >= maxNext
         currNr = inputV V.! si
-        smN = if newStart then 0 else max sm mehN
-        mehNN = if newDsjnt then 0 else mehN
+        smN = if newStart then currNr else max sm mehN
+        mehNN = if newDsjnt then currNr else mehN
         mehN = max currNr (meh + currNr)
         len = V.length inputV
 {-def max_subarray(A):
@@ -116,6 +126,7 @@ main = do
 --    putStr $ unlines $ map show $ bgstL inputV k
 {-
 kadane $ V.fromList [9404,8036,-9334,-9146,8085,3024,988,5875,2264,-4643,-8916,-8072,1954,3424,5364,-2633,-8910,-7310,9443,-5096,4982,-7834,5164,-8360,185,265,277,-4154,-6615,6233,5988,-9008,5849,-948,6458,-9633,7955,432,1308,6533,-4667,9545,9446,1002,4452,-2285,-2413,-8734,4224,5492,-6250,-38,-3089,-6761,2326,-2209,-7962,-929,5710,-391,-6415,5399,4758,933,-3318,-8572,566,8181,-1512,-2937,-5897,5525,-7054,912,-8863,-4893,2963,-8827,-8376,5579,-8906,2265,5349,9388,4664,5708,2630,-4177,7665,6774,-5152,-5504,6138,2018,2464,3936,-5985,9804,-9520,1245]
+
 100 20
 9404 8036 -9334 -9146 8085 3024 988 5875 2264 -4643 -8916 -8072 1954 3424 5364 -2633 -8910 -7310 9443 -5096 4982 -7834 5164 -8360 185 265 277 -4154 -6615 6233 5988 -9008 5849 -948 6458 -9633 7955 432 1308 6533 -4667 9545 9446 1002 4452 -2285 -2413 -8734 4224 5492 -6250 -38 -3089 -6761 2326 -2209 -7962 -929 5710 -391 -6415 5399 4758 933 -3318 -8572 566 8181 -1512 -2937 -5897 5525 -7054 912 -8863 -4893 2963 -8827 -8376 5579 -8906 2265 5349 9388 4664 5708 2630 -4177 7665 6774 -5152 -5504 6138 2018 2464 3936 -5985 9804 -9520 1245
 expected output:
@@ -138,6 +149,7 @@ expected output:
 1245
 912
 727
+
 10 4
 -10 -2 -4 -100 400 -20 -2 -1 -5 -10
 exptected output:
