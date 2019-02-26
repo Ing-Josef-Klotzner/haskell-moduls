@@ -1,9 +1,0 @@
-Configuring microlens-0.4.8.3...
-Preprocessing library for microlens-0.4.8.3..
-Building library for microlens-0.4.8.3..
-[1 of 4] Compiling Lens.Micro.Type  ( src/Lens/Micro/Type.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Lens/Micro/Type.o )
-[2 of 4] Compiling Lens.Micro.Internal ( src/Lens/Micro/Internal.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Lens/Micro/Internal.o )
-[3 of 4] Compiling Lens.Micro       ( src/Lens/Micro.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Lens/Micro.o )
-[4 of 4] Compiling Lens.Micro.Extras ( src/Lens/Micro/Extras.hs, .stack-work/dist/x86_64-linux/Cabal-2.0.1.0/build/Lens/Micro/Extras.o )
-Installing library in /home/josef/.stack/snapshots/x86_64-linux/lts-11.1/8.2.2/lib/x86_64-linux-ghc-8.2.2/microlens-0.4.8.3-Hhd1pyfmRF65YkTRK2Yote
-Registering library for microlens-0.4.8.3..
