@@ -11,3 +11,7 @@ PrintBinaryTree.hs
     to see graphics file drag it to a browser or open it with a program being able to handle svg format
 
     Purpose: For everybody who wants to visualize his BinaryTree(s)
+
+... and there are more and more exercises!
+
+Enjoy!
