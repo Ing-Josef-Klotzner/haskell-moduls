@@ -26,7 +26,7 @@ findBgst inputV = go 0 0 0 0 1 where
 -- faster: Kadane algorithm O (n)
 -- find maximum sum of subarray, return (sum, startindex, length)
 kadane :: V.Vector Int -> (Int, Int, Int)
-kadane inputV = go 0 sm1 sm1 0 0 1 where
+kadane inputV = go 0 sm1 sm1 0 1 1 where
     sm1 = inputV V.! 0
     go simOld sm meh sim lgm si
         | si == len = (sm, simOld, lgm)
@@ -42,8 +42,9 @@ kadane inputV = go 0 sm1 sm1 0 0 1 where
         mehN = max currNr (meh + currNr)
         len = V.length inputV
 -- faster in total - create a reverse sorted list of maxima during kadane search - O (n * log n)
+-- not necessary to evaluate startindex sim, length lgm, and simOld -> OrderExercises.hs
 kadaneL :: V.Vector Int -> Int -> [Int]
-kadaneL inputV k = go 0 sm1 sm1 0 0 1 V.empty where
+kadaneL inputV k = go 0 sm1 sm1 0 1 1 V.empty where
     sm1 = inputV V.! 0
     go simOld sm meh sim lgm si kadL
         | si == len = take k $ reverse $ sort $ V.toList kadLl
@@ -72,7 +73,7 @@ kadaneL inputV k = go 0 sm1 sm1 0 0 1 V.empty where
                 newMaxg = smgN > smg
                 smgN = max smg mehgN
                 mehgN = max currNrg (mehg + currNrg)
-        newStart = mehN < 0 || newDsjnt
+        newStart = mehN <= 0 && isNewDsjnt || newDsjnt
         newDsjnt = if mehN < meh && mehN > 0 then isNewDsjnt else False
         (maxNext, lgmgNext) = maxNnewStart
         isNewDsjnt = meh >= maxNext

@@ -63,7 +63,7 @@ kadaneL inputV k = go sm1 sm1 1 V.empty where
                 newStartg = mehgN < 0
                 smgN = max smg mehgN
                 mehgN = max currNrg (mehg + currNrg)
-        newStart = mehN <= 0 && meh >= maxNnewStart || newDsjnt
+        newStart = mehN < 0 || newDsjnt
         newDsjnt = if mehN < meh && mehN > 0 then meh >= maxNnewStart else False
         currNr = inputV V.! si
         smN = if newStart then 0 else max sm mehN
@@ -133,8 +133,8 @@ main = do
 --    print inputV
 --    print $ findBgst inputV
 
-    putStr $ unlines $ map show $ kadaneL inputV k
---    putStr $ unlines $ map show $ bgstLKadane inputV k
+--    putStr $ unlines $ map show $ kadaneL inputV k
+    putStr $ unlines $ map show $ bgstLKadane inputV k
 
 -- changed for debug:
 --    putStr $ unwords $ map show $ bgstLKadane inputV k
