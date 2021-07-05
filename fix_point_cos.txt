@@ -1,0 +1,6 @@
+cos alpha = A / H
+
+fixpoint 
+cos alpha = alpha   (=0.73908513321516067)
+
+alpha = A / H

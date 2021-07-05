@@ -1,0 +1,47 @@
+2 patches for repository http://code.haskell.org/alsa/core:
+
+patch 74bd88af0b49f267c547baba4132dc2c06ac44a3
+Author: sibi@psibi.in
+Date:   Fri Jun 23 23:57:03 IST 2017
+  * Fix build issues
+
+patch d94e1defe2a3e6e2ab22b97f73b616c800621437
+Author: sibi@psibi.in
+Date:   Fri Jun 23 23:58:32 IST 2017
+  * Bump package version
+
+New patches:
+
+[Fix build issues
+sibi@psibi.in**20170623182703
+ Ignore-this: d79ee28d6251d63b931623c23c090bc2
+] {
+hunk ./alsa-core.cabal 28
+-Flag pkgConfig
+-  Description: use pkg-config if it works
+-  -- http://hackage.haskell.org/trac/hackage/ticket/170
+-  Default: True
+-
+hunk ./alsa-core.cabal 39
+-  If flag(pkgConfig)
+-    PkgConfig-depends: alsa >= 1.0.14
+-  Else
+-    Includes: alsa/asoundlib.h
+-    Extra-Libraries: asound
++  Includes: alsa/asoundlib.h
++  Extra-Libraries: asound
+}
+
+[Bump package version
+sibi@psibi.in**20170623182832
+ Ignore-this: 35f6fa9c9a160ebd831535107c6956eb
+] hunk ./alsa-core.cabal 2
+-Version:       0.5.0.1
++Version:       0.5.0.2
+
+Context:
+
+[TAG 0.5.0.1
+alsa@henning-thielemann.de**20120427105757] 
+Patch bundle hash:
+a39fc7ed60eb1a39e2a1c36ae730dee97c57f62c

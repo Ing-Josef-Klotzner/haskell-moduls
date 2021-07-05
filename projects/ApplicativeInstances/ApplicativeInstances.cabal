@@ -1,0 +1,22 @@
+name:                ApplicativeInstances
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/https://github.com/Ing-Josef-Klotzner/haskell-moduls/tree/haskell-training/projects/ApplicativeInstances#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Ing. Josef Klotzner
+maintainer:          josef.klotzner@gmail.com
+copyright:           Ing. Josef Klotzner
+category:            haskell training
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable ApplicativeInstances
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                    ,  QuickCheck
+                    ,  checkers
